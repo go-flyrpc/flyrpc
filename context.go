@@ -14,7 +14,19 @@ func NewContext(protocol Protocol, router Router, clientId int) *Context {
 	return &Context{Protocol: protocol, Router: router, ClientId: clientId}
 }
 
-func (ctx *Context) SendMessage() {
+func (ctx *Context) SendMessage(cmdId CmdIdSize, message Message) error {
+	buff, err := ctx.serializer.Marshal(message)
+	if err != nil {
+		return err
+	}
+	ctx.Protocol.SendPacket(&Packet{
+		ClientId: ctx.ClientId,
+		Header: &Header{
+			Flag: 0,
+		},
+		MsgBuff: buff,
+	})
+	return nil
 }
 
 func (ctx *Context) Call() {

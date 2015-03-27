@@ -14,7 +14,7 @@ const (
 	LFLAG_ERROR byte = 0x20
 	// LFLAG_NOTIFY byte = 0x10
 	// LFLAG_LEN_16 byte = 0x08
-	// LFLAG_STREAM_MODE byte = 0x04
+	LFLAG_BUFFER_PACKET byte = 0x04
 	// LFLAG_ZIP         byte = 0x02
 	// LFLAG_ENCRYPT     byte = 0x01
 )

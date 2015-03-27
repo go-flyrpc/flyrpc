@@ -1,22 +1,24 @@
 # 草案
 模式
-[OK]Send/Recv
-[OK]Req/Res
-Pub/Sub
+* [OK]Send/Recv
+* [OK]Req/Res
+* Pub/Sub
 
 网络协议 
-[OK]TCP
-UDP
-Websocket
-P2P
+* [OK]TCP
+* UDP
+* Websocket
+* P2P
 
 序列化接口 
-[OK]自定义
-[OK]json
-[OK]protobuf (proto3)
-[OK]msgpack
+* [OK]自定义
+* [OK]json
+* [OK]protobuf (proto3)
+* [OK]msgpack
 
 多路复用
+* Gateway Node
+* Backend Node
 
 ```
 type ClientStub struct {

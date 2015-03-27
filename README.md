@@ -11,6 +11,7 @@
 * P2P
 
 ## 序列化接口 
+* 数据压缩
 * [OK]自定义
 * [OK]json
 * [OK]protobuf (proto3)
@@ -22,21 +23,34 @@
 
 ## API
 
-### Server.Listen(addr)
+#### type MessageHandler
+MessageHandler 可以有以下几种形式
 
-### Server.OnMessage(cmdId, func(*Context, in Message) (out Message, err error))
+```go
+// 有返回值，用于处理Call
+func(*Context, in Message) (out Message, err error)
+func(*Context, in Message) out Message
 
-### Context.SendMessage(cmdId, Message)
+// 无返回值，用于处理SendMessage
+func(*Context, in Message) err error
+func(*Context, in Message)
+```
 
-### Context.Call(cmdId, Message) (Message, error)
+#### Server.Listen(addr)
 
-### Client.Connect(addr)
+#### Server.OnMessage(cmdId, MessageHandler)
 
-### Client.OnMessage(cmdId, func(*Context, in Message)) (out Message, err error))
+#### Context.SendMessage(cmdId, Message)
 
-### Client.SendMessage(cmdId, Message)
+#### Context.Call(cmdId, Message) (Message, error)
 
-### Client.Call(cmdId, Message) (Message, error)
+#### Client.Connect(addr)
+
+#### Client.OnMessage(cmdId, MessageHandler)
+
+#### Client.SendMessage(cmdId, Message)
+
+#### Client.Call(cmdId, Message) (Message, error)
 
 ## 待定
 ```

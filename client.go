@@ -11,8 +11,10 @@ type Client struct {
 func NewClient(conn net.Conn, serializer Serializer) *Client {
 	protocol := NewProtocol(conn, false)
 	router := NewRouter(serializer)
+	context := NewContext(protocol, router, 0, serializer)
+	protocol.OnPacket(context.emitPacket)
 	return &Client{
-		NewContext(protocol, router, 0, serializer),
+		context,
 		router,
 		serializer,
 	}

@@ -32,24 +32,12 @@ type Header struct {
 }
 
 type Packet struct {
+	// TODO remove this from packet
 	Protocol Protocol
 	ClientId int
 	Length   LengthSize
 	Header   *Header
 	MsgBuff  []byte
-}
-
-func (pkt *Packet) SendPacket(header *Header, bytes []byte) error {
-	return pkt.Protocol.SendPacket(&Packet{
-		ClientId: pkt.ClientId,
-		Header:   header,
-		MsgBuff:  bytes,
-	})
-}
-
-func (pkt *Packet) SendError(err *FlyError) error {
-	// TODO
-	return nil
 }
 
 type PacketHandler func(*Packet)
@@ -113,8 +101,10 @@ func (p *protocol) SendPacket(pk *Packet) error {
 		return NewFlyError(ERR_BUFF_TO_LONG, nil)
 	}
 	binary.Write(p.Writer, binary.BigEndian, pk.Header)
+	log.Println("SendPacket:", pk.Header)
 
 	binary.Write(p.Writer, binary.BigEndian, pk.Length)
+	log.Println("SendPacket:", pk.MsgBuff)
 	p.Writer.Write(pk.MsgBuff)
 	p.Writer.Flush()
 	return nil
@@ -123,9 +113,8 @@ func (p *protocol) SendPacket(pk *Packet) error {
 func (p *protocol) handleStream() {
 	// 协议处理函数
 	for {
-		log.Println("read packet")
 		msg, err := p.ReadPacket()
-		log.Println("packet", msg)
+		log.Println("readPacket:", msg, err)
 		if err != nil {
 			if err != io.EOF {
 				log.Println("error", err)
@@ -134,38 +123,31 @@ func (p *protocol) handleStream() {
 			break
 		}
 		for _, handler := range p.handlers {
-			log.Println("handle msg")
 			go handler(msg)
 		}
 	}
 }
 
 func (p *protocol) ReadPacket() (*Packet, error) {
-	log.Println("reading packet")
 	var clientId = p.Id
 	if p.IsMultiplex {
-		log.Println("reading packet 1")
 		err := binary.Read(p.Reader, binary.BigEndian, &clientId)
 		if err != nil {
 			return nil, err
 		}
 	}
-	log.Println("reading header")
 	// read header
 	header := &Header{}
 	err := binary.Read(p.Reader, binary.BigEndian, header)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("reading Length ")
 	// read length
 	var length LengthSize
 	err = binary.Read(p.Reader, binary.BigEndian, &length)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("length is", length)
-	log.Println("reading buff")
 	buf := make([]byte, length)
 	_, err = io.ReadFull(p.Reader, buf)
 	if err != nil {

@@ -105,7 +105,7 @@ func (t *transport) getContext(clientId int) *Context {
 
 func (t *transport) addClient(clientId int) *Context {
 	t.clientIds = append(t.clientIds, clientId)
-	context := NewContext(t.protocol, t.server.Router, clientId)
+	context := NewContext(t.protocol, t.server.Router, clientId, t.server.serializer)
 	t.server.contextMap[clientId] = context
 	return context
 }

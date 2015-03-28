@@ -12,7 +12,7 @@ func NewClient(conn net.Conn, serializer Serializer) *Client {
 	protocol := NewProtocol(conn, false)
 	router := NewRouter(serializer)
 	return &Client{
-		NewContext(protocol, router, 0),
+		NewContext(protocol, router, 0, serializer),
 		router,
 		serializer,
 	}

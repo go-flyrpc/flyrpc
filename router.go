@@ -21,7 +21,7 @@ import "reflect"
 type HandlerFunc interface{}
 
 type Route interface {
-	Call(*Packet) error
+	onPacket(*Context, *Packet) error
 }
 
 type Router interface {
@@ -103,7 +103,7 @@ func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
 	return r
 }
 
-func (route *route) Call(pkt *Packet) error {
+func (route *route) onPacket(ctx *Context, pkt *Packet) error {
 	v := reflect.New(route.inType.Elem())
 	err := route.serializer.Unmarshal(pkt.MsgBuff, v.Interface())
 	if err != nil {
@@ -127,7 +127,7 @@ func (route *route) Call(pkt *Packet) error {
 			flyErr, ok := err.(*FlyError)
 			if ok && flyErr.Code < 20000 {
 				// client error
-				return pkt.SendError(flyErr)
+				return ctx.SendError(flyErr)
 			}
 			return err
 		}
@@ -136,11 +136,11 @@ func (route *route) Call(pkt *Packet) error {
 		if err != nil {
 			return err
 		}
-		return pkt.SendPacket(&Header{
-			Flag:  LFLAG_RPC | LFLAG_RESP,
-			CmdId: pkt.Header.CmdId,
-			MsgId: pkt.Header.MsgId,
-		}, bytes)
+		return ctx.SendPacket(
+			LFLAG_RPC|LFLAG_RESP,
+			pkt.Header.CmdId,
+			pkt.Header.MsgId,
+			bytes)
 	}
 	return err
 }
@@ -169,5 +169,5 @@ func (router *router) onPacket(ctx *Context, p *Packet) error {
 	if rt == nil {
 		return NewFlyError(ERR_NOT_FOUND, nil)
 	}
-	return rt.Call(p)
+	return rt.onPacket(ctx, p)
 }

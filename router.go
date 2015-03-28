@@ -2,21 +2,15 @@ package fly
 
 import "reflect"
 
-//----------design a ---------
-// func(*Packet)
-// func(*Packet) Message
-// func(*Packet) error
-// func(*Packet) (Message, error)
-// func(*Packet, Message)
-// func(*Packet, Message) Message
-// func(*Packet, Message) error
-// func(*Packet, Message) (Messag, error)
-// ---------- design b -----------
-// func(*Packet, in ...Message)
-// func(*Packet, in ...Message) Messag
-// func(*Packet, in ...Message) error
-// func(*Packet, in ...Message) (Messag, error )
-//type HandlerFunc interface{}
+// Message must be explicit type, e.g. *User
+// func(*Context)
+// func(*Context) Message
+// func(*Context) error
+// func(*Context) (Message, error)
+// func(*Context, Message)
+// func(*Context, Message) Message
+// func(*Context, Message) error
+// func(*Context, Message) (Message, error)
 
 type HandlerFunc interface{}
 
@@ -46,9 +40,9 @@ type route struct {
 }
 
 var (
-	_err       error
-	typeError  reflect.Type = reflect.TypeOf(&_err).Elem()
-	typePacket reflect.Type = reflect.TypeOf(&Packet{})
+	_err        error
+	typeError   reflect.Type = reflect.TypeOf(&_err).Elem()
+	typeContext reflect.Type = reflect.TypeOf(&Context{})
 )
 
 func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
@@ -77,11 +71,14 @@ func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
 	for i := 0; i < numOut; i++ {
 		r.out[i] = r.vHandler.Type().Out(i)
 	}
-	if numIn != 2 {
-		panic("Handler must be func(*Packet, Message)")
+	if numIn > 2 {
+		panic("Handler arguments must be ([*Context], [Message])")
 	}
-	if r.in[0] != typePacket {
-		panic("handler first parameter must be *Packet")
+	if numIn != 2 {
+		panic("Handler must be func(*Context, Message)")
+	}
+	if r.in[0] != typeContext {
+		panic("handler first parameter must be *Context")
 	}
 	r.inType = r.in[1]
 	if numOut > 2 {
@@ -109,7 +106,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	if err != nil {
 		return err
 	}
-	ret := route.vHandler.Call([]reflect.Value{reflect.ValueOf(pkt), v})
+	ret := route.vHandler.Call([]reflect.Value{reflect.ValueOf(ctx), v})
 	// retSize := len(ret)
 	// if retSize != route.numOut {
 	// 	panic("Error result size")

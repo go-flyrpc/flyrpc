@@ -15,7 +15,7 @@ func TestContextSendMessage(t *testing.T) {
 	context := NewContext(protocol, router, 0, serializer)
 	protocol.OnPacket(context.emitPacket)
 	c := make(chan *TestUser, 1)
-	router.AddRoute(1, func(ctx *Packet, in *TestUser) {
+	router.AddRoute(1, func(ctx *Context, in *TestUser) {
 		c <- in
 	})
 	err := context.SendMessage(1, &TestUser{Id: 123})
@@ -31,7 +31,7 @@ func TestContextCall(t *testing.T) {
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	protocol.OnPacket(context.emitPacket)
-	router.AddRoute(1, func(ctx *Packet, in *TestUser) *TestUser {
+	router.AddRoute(1, func(ctx *Context, in *TestUser) *TestUser {
 		return &TestUser{Id: in.Id + 1}
 	})
 	var reply = new(TestUser)

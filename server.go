@@ -5,6 +5,11 @@ import (
 	"net"
 )
 
+type ServerOpts struct {
+	serializer Serializer
+	multiplex  bool
+}
+
 type Server struct {
 	Router       Router
 	multiplex    bool
@@ -21,8 +26,21 @@ type transport struct {
 	clientIds []int
 }
 
-func NewServer() *Server {
-	return nil
+func NewServer(opts *ServerOpts) *Server {
+	if opts == nil {
+		opts = &ServerOpts{}
+	}
+	if opts.serializer == nil {
+		opts.serializer = JSON
+	}
+	return &Server{
+		Router:       NewRouter(opts.serializer),
+		multiplex:    opts.multiplex,
+		serializer:   opts.serializer,
+		transports:   make([]*transport, 0),
+		contextMap:   make(map[int]*Context),
+		nextClientId: 1,
+	}
 }
 
 func (s *Server) Broadcast(clientIds []int, cmdId CmdIdSize, v Message) error {

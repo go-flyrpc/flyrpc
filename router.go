@@ -21,13 +21,13 @@ import "reflect"
 type HandlerFunc interface{}
 
 type Route interface {
-	onPacket(*Context, *Packet) error
+	emitPacket(*Context, *Packet) error
 }
 
 type Router interface {
 	AddRoute(CmdIdSize, HandlerFunc)
 	GetRoute(CmdIdSize) Route
-	onPacket(*Context, *Packet) error
+	emitPacket(*Context, *Packet) error
 }
 
 type route struct {
@@ -103,7 +103,7 @@ func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
 	return r
 }
 
-func (route *route) onPacket(ctx *Context, pkt *Packet) error {
+func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	v := reflect.New(route.inType.Elem())
 	err := route.serializer.Unmarshal(pkt.MsgBuff, v.Interface())
 	if err != nil {
@@ -164,10 +164,10 @@ func (router *router) GetRoute(cmdId CmdIdSize) Route {
 	return router.routes[cmdId]
 }
 
-func (router *router) onPacket(ctx *Context, p *Packet) error {
+func (router *router) emitPacket(ctx *Context, p *Packet) error {
 	rt := router.GetRoute(p.Header.CmdId)
 	if rt == nil {
 		return NewFlyError(ERR_NOT_FOUND, nil)
 	}
-	return rt.onPacket(ctx, p)
+	return rt.emitPacket(ctx, p)
 }

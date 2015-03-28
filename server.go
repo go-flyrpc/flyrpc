@@ -85,14 +85,14 @@ func newTransport(conn net.Conn, server *Server) *transport {
 	} else {
 		transport.addClient(server.GetNextClientId())
 	}
-	protocol.OnPacket(transport.onPacket)
+	protocol.OnPacket(transport.emitPacket)
 	return transport
 }
 
-func (t *transport) onPacket(pkt *Packet) {
+func (t *transport) emitPacket(pkt *Packet) {
 	// TODO fix non clientId
 	clientId := pkt.ClientId
-	t.getContext(clientId).onPacket(pkt)
+	t.getContext(clientId).emitPacket(pkt)
 }
 
 func (t *transport) getContext(clientId int) *Context {

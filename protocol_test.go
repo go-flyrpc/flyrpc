@@ -41,6 +41,7 @@ func TestProtocolReal(t *testing.T) {
 	assert.Equal(t, CmdIdSize(123), pkt.Header.MsgId)
 	assert.Equal(t, 6, len(pkt.MsgBuff))
 	assert.Equal(t, byte(6), pkt.MsgBuff[5])
+	conn1.Close()
 }
 
 /*

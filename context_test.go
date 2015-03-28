@@ -13,7 +13,7 @@ func TestContextSendMessage(t *testing.T) {
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
-	protocol.OnPacket(context.onPacket)
+	protocol.OnPacket(context.emitPacket)
 	c := make(chan *TestUser, 1)
 	router.AddRoute(1, func(ctx *Packet, in *TestUser) {
 		c <- in
@@ -30,7 +30,7 @@ func TestContextCall(t *testing.T) {
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
-	protocol.OnPacket(context.onPacket)
+	protocol.OnPacket(context.emitPacket)
 	router.AddRoute(1, func(ctx *Packet, in *TestUser) *TestUser {
 		return &TestUser{Id: in.Id + 1}
 	})

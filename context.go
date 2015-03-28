@@ -73,7 +73,7 @@ func (ctx *Context) Call(cmdId CmdIdSize, reply Message, message Message) error 
 	return ctx.serializer.Unmarshal(rBuff, reply)
 }
 
-func (ctx *Context) onPacket(pkt *Packet) {
+func (ctx *Context) emitPacket(pkt *Packet) {
 	if pkt.Header.Flag&LFLAG_RESP != 0 {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
@@ -85,7 +85,7 @@ func (ctx *Context) onPacket(pkt *Packet) {
 		return
 	}
 	ctx.Packet = pkt
-	ctx.Router.onPacket(ctx, pkt)
+	ctx.Router.emitPacket(ctx, pkt)
 }
 
 func (ctx *Context) getNextId() MsgIdSize {

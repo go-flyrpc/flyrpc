@@ -23,7 +23,7 @@ func TestRouter(t *testing.T) {
 	r.AddRoute(1, func(p *Packet, u *TestUser) {
 		p1 = u
 	})
-	err = r.onPacket(ctx, &Packet{
+	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
 			CmdId: 1,
@@ -37,7 +37,7 @@ func TestRouter(t *testing.T) {
 		p2 = u
 		return errors.New("e1")
 	})
-	err = r.onPacket(ctx, &Packet{
+	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
 			CmdId: 2,
@@ -52,7 +52,7 @@ func TestRouter(t *testing.T) {
 		p3 = u
 		return &TestUser{Id: 567}
 	})
-	err = r.onPacket(ctx, &Packet{
+	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
 			CmdId: 3,
@@ -67,7 +67,7 @@ func TestRouter(t *testing.T) {
 		p4 = u
 		return &TestUser{Id: 789}, nil
 	})
-	err = r.onPacket(ctx, &Packet{
+	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
 			CmdId: 4,
@@ -81,7 +81,7 @@ func TestRouter(t *testing.T) {
 	r.AddRoute(5, func(p *Packet, u *TestUser) (*TestUser, error) {
 		return nil, NewFlyError(10000)
 	})
-	err = r.onPacket(ctx, &Packet{
+	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
 			CmdId: 5,
@@ -92,7 +92,7 @@ func TestRouter(t *testing.T) {
 	// assert.NotNil(t, err)
 	// assert.Equal(t, 10000, err.(*FlyError).Code)
 
-	err = r.onPacket(ctx, &Packet{
+	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
 			CmdId: 100,

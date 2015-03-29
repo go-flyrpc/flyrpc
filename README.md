@@ -38,19 +38,19 @@ func(*Context, in Message)
 
 #### Server.Listen(addr)
 
-#### Server.OnMessage(cmdId, MessageHandler)
+#### Server.OnMessage(cmd, MessageHandler)
 
-#### Context.SendMessage(cmdId, Message)
+#### Context.SendMessage(cmd, Message)
 
-#### Context.Call(cmdId, Message) (Message, error)
+#### Context.Call(cmd, Message) (Message, error)
 
 #### Client.Connect(addr)
 
-#### Client.OnMessage(cmdId, MessageHandler)
+#### Client.OnMessage(cmd, MessageHandler)
 
-#### Client.SendMessage(cmdId, Message)
+#### Client.SendMessage(cmd, Message)
 
-#### Client.Call(cmdId, Message) (Message, error)
+#### Client.Call(cmd, Message) (Message, error)
 
 ## 待定
 ```

@@ -26,7 +26,7 @@ func TestRouter(t *testing.T) {
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
-			CmdId: 1,
+			Cmd: 1,
 		},
 		MsgBuff: buff,
 	})
@@ -40,7 +40,7 @@ func TestRouter(t *testing.T) {
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
-			CmdId: 2,
+			Cmd: 2,
 		},
 		MsgBuff: buff,
 	})
@@ -55,7 +55,7 @@ func TestRouter(t *testing.T) {
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
-			CmdId: 3,
+			Cmd: 3,
 		},
 		MsgBuff: buff,
 	})
@@ -70,7 +70,7 @@ func TestRouter(t *testing.T) {
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
-			CmdId: 4,
+			Cmd: 4,
 		},
 		MsgBuff: buff,
 	})
@@ -84,7 +84,7 @@ func TestRouter(t *testing.T) {
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
-			CmdId: 5,
+			Cmd: 5,
 		},
 		MsgBuff: buff,
 	})
@@ -95,11 +95,11 @@ func TestRouter(t *testing.T) {
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
 		Header: &Header{
-			CmdId: 100,
+			Cmd: 100,
 		},
 		MsgBuff: buff,
 	})
 	assert.NotNil(t, err)
-	assert.Equal(t, ERR_NOT_FOUND, err.(*FlyError).Code)
+	assert.Equal(t, ErrNotFound, err.(*flyError).Code)
 	// log.Println(outbuff.Bytes())
 }

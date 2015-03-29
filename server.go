@@ -43,7 +43,7 @@ func NewServer(opts *ServerOpts) *Server {
 	}
 }
 
-func (s *Server) Broadcast(clientIds []int, cmdId CmdIdSize, v Message) error {
+func (s *Server) Broadcast(clientIds []int, cmd TCmd, v Message) error {
 	return nil
 }
 
@@ -61,12 +61,12 @@ func (s *Server) IsMultiplex() bool {
 	return s.multiplex
 }
 
-func (s *Server) OnMessage(cmdId CmdIdSize, handler HandlerFunc) {
-	s.Router.AddRoute(cmdId, handler)
+func (s *Server) OnMessage(cmd TCmd, handler HandlerFunc) {
+	s.Router.AddRoute(cmd, handler)
 }
 
-func (s *Server) SendMessage(clientId int, cmdId CmdIdSize, v Message) error {
-	return s.GetContext(clientId).SendMessage(cmdId, v)
+func (s *Server) SendMessage(clientId int, cmd TCmd, v Message) error {
+	return s.GetContext(clientId).SendMessage(cmd, v)
 }
 
 func (s *Server) Listen(addr string) error {

@@ -4,36 +4,39 @@ import "strconv"
 
 const (
 	// 10000 - 20000 client error
-	ERR_NOT_FOUND    int = 10000
-	ERR_BUFF_TO_LONG int = 11000
+
+	ErrNotFound    int = 10000
+	ErrBuffTooLong int = 11000
 	// 20000 + server error
-	ERR_NO_WRITER     int = 21000
-	ERR_WRITER_CLOSED int = 21001
+
+	ErrNoWriter     int = 21000
+	ErrWriterClosed int = 21001
 	// 25000 + serializer error
-	ERR_NOT_PROTO_MESSAGE int = 25010
+
+	ErrNotProtoMessage int = 25010
 )
 
-var messages map[int]string = map[int]string{
-	ERR_NO_WRITER:     "NO_WRITER",
-	ERR_WRITER_CLOSED: "WRITER_CLOSED",
+var messages = map[int]string{
+	ErrNoWriter:     "NO_WRITER",
+	ErrWriterClosed: "WRITER_CLOSED",
 }
 
-type FlyError struct {
+type flyError struct {
 	Code    int
 	Message string
 	Err     error
 }
 
-func (f *FlyError) Error() string {
+func (f *flyError) Error() string {
 	return "FlyError " + strconv.Itoa(f.Code) + " " + f.Message
 }
 
-func NewFlyError(code int, args ...error) *FlyError {
+func NewFlyError(code int, args ...error) *flyError {
 	var err error
 	if len(args) > 0 {
 		err = args[0]
 	}
-	return &FlyError{
+	return &flyError{
 		Code:    code,
 		Message: messages[code],
 		Err:     err,

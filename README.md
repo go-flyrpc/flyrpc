@@ -102,4 +102,4 @@ NOTICE:
 
 ## 消息协议
 
-flag|cmdId|msgId|serialized-buff
+flag|cmd|seq|serialized-buff

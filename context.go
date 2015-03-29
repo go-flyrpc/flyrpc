@@ -10,7 +10,7 @@ type Context struct {
 	Router   Router
 	// private
 	serializer Serializer
-	nextMsgId  MsgIdSize
+	nextSeq    TSeq
 	replyChans map[int]chan<- []byte
 }
 
@@ -24,46 +24,46 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 	}
 }
 
-func (ctx *Context) SendPacket(flag byte, cmdId CmdIdSize, msgId MsgIdSize, buff []byte) error {
+func (ctx *Context) SendPacket(flag byte, cmd TCmd, seq TSeq, buff []byte) error {
 	return ctx.Protocol.SendPacket(&Packet{
 		ClientId: ctx.ClientId,
 		Header: &Header{
-			Flag:  flag,
-			CmdId: cmdId,
-			MsgId: msgId,
+			Flag: flag,
+			Cmd:  cmd,
+			Seq:  seq,
 		},
 		MsgBuff: buff,
 	})
 }
 
-func (ctx *Context) SendError(err *FlyError) error {
+func (ctx *Context) SendError(err *flyError) error {
 	// TODO
 	return nil
 }
 
-func (ctx *Context) SendMessage(cmdId CmdIdSize, message Message) error {
+func (ctx *Context) SendMessage(cmd TCmd, message Message) error {
 	buff, err := ctx.serializer.Marshal(message)
 	if err != nil {
 		return err
 	}
-	return ctx.SendPacket(0, cmdId, ctx.getNextId(), buff)
+	return ctx.SendPacket(0, cmd, ctx.getNextSeq(), buff)
 }
 
-func (ctx *Context) Call(cmdId CmdIdSize, reply Message, message Message) error {
+func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	buff, err := ctx.serializer.Marshal(message)
 	if err != nil {
 		return err
 	}
 	header := &Header{
-		CmdId: cmdId,
-		MsgId: ctx.getNextId(),
+		Cmd: cmd,
+		Seq: ctx.getNextSeq(),
 	}
 	if reply == nil {
 		panic("reply message can't be nil")
 	}
 	// init channel before send packet
 	replyChan := make(chan []byte, 1)
-	// set replyChan for cmdId | msgId
+	// set replyChan for cmd | seq
 	chanId := ctx.getChanId(header)
 	ctx.replyChans[chanId] = replyChan
 	ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff})
@@ -74,7 +74,7 @@ func (ctx *Context) Call(cmdId CmdIdSize, reply Message, message Message) error 
 }
 
 func (ctx *Context) emitPacket(pkt *Packet) {
-	if pkt.Header.Flag&LFLAG_RESP != 0 {
+	if pkt.Header.Flag&LFlagResp != 0 {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {
@@ -88,11 +88,11 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 	ctx.Router.emitPacket(ctx, pkt)
 }
 
-func (ctx *Context) getNextId() MsgIdSize {
-	ctx.nextMsgId++
-	return ctx.nextMsgId
+func (ctx *Context) getNextSeq() TSeq {
+	ctx.nextSeq++
+	return ctx.nextSeq
 }
 
 func (ctx *Context) getChanId(header *Header) int {
-	return int(header.CmdId)<<16 | int(header.MsgId)
+	return int(header.Cmd)<<16 | int(header.Seq)
 }

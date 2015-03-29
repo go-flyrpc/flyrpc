@@ -19,8 +19,8 @@ type Route interface {
 }
 
 type Router interface {
-	AddRoute(CmdIdSize, HandlerFunc)
-	GetRoute(CmdIdSize) Route
+	AddRoute(TCmd, HandlerFunc)
+	GetRoute(TCmd) Route
 	emitPacket(*Context, *Packet) error
 }
 
@@ -41,8 +41,8 @@ type route struct {
 
 var (
 	_err        error
-	typeError   reflect.Type = reflect.TypeOf(&_err).Elem()
-	typeContext reflect.Type = reflect.TypeOf(&Context{})
+	typeError   = reflect.TypeOf(&_err).Elem()
+	typeContext = reflect.TypeOf(&Context{})
 )
 
 func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
@@ -121,7 +121,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	if route.outType != nil {
 		// rpc return
 		if err != nil {
-			flyErr, ok := err.(*FlyError)
+			flyErr, ok := err.(*flyError)
 			if ok && flyErr.Code < 20000 {
 				// client error
 				return ctx.SendError(flyErr)
@@ -134,37 +134,37 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			return err
 		}
 		return ctx.SendPacket(
-			LFLAG_RPC|LFLAG_RESP,
-			pkt.Header.CmdId,
-			pkt.Header.MsgId,
+			LFlagRPC|LFlagResp,
+			pkt.Header.Cmd,
+			pkt.Header.Seq,
 			bytes)
 	}
 	return err
 }
 
 type router struct {
-	routes     map[CmdIdSize]Route
+	routes     map[TCmd]Route
 	serializer Serializer
 	// routesLock sync.RWMutex
 }
 
 func NewRouter(serializer Serializer) Router {
-	return &router{routes: make(map[CmdIdSize]Route), serializer: serializer}
+	return &router{routes: make(map[TCmd]Route), serializer: serializer}
 }
 
-func (router *router) AddRoute(cmdId CmdIdSize, h HandlerFunc) {
+func (router *router) AddRoute(cmd TCmd, h HandlerFunc) {
 	route := NewRoute(h, router.serializer)
-	router.routes[cmdId] = route
+	router.routes[cmd] = route
 }
 
-func (router *router) GetRoute(cmdId CmdIdSize) Route {
-	return router.routes[cmdId]
+func (router *router) GetRoute(cmd TCmd) Route {
+	return router.routes[cmd]
 }
 
 func (router *router) emitPacket(ctx *Context, p *Packet) error {
-	rt := router.GetRoute(p.Header.CmdId)
+	rt := router.GetRoute(p.Header.Cmd)
 	if rt == nil {
-		return NewFlyError(ERR_NOT_FOUND, nil)
+		return NewFlyError(ErrNotFound, nil)
 	}
 	return rt.emitPacket(ctx, p)
 }

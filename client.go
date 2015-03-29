@@ -20,6 +20,6 @@ func NewClient(conn net.Conn, serializer Serializer) *Client {
 	}
 }
 
-func (c *Client) OnMessage(cmdId CmdIdSize, handler HandlerFunc) {
-	c.Router.AddRoute(cmdId, handler)
+func (c *Client) OnMessage(cmd TCmd, handler HandlerFunc) {
+	c.Router.AddRoute(cmd, handler)
 }

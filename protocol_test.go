@@ -27,18 +27,18 @@ func TestProtocolReal(t *testing.T) {
 
 	p1.SendPacket(&Packet{
 		Header: &Header{
-			Flag:  111,
-			CmdId: 222,
-			MsgId: 123,
+			Flag: 111,
+			Cmd:  222,
+			Seq:  123,
 		},
 		MsgBuff: []byte{1, 2, 3, 4, 5, 6},
 	})
 
 	pkt := <-cpkt
 	log.Println("return packet", pkt.MsgBuff)
-	assert.Equal(t, CmdIdSize(111), pkt.Header.Flag)
-	assert.Equal(t, CmdIdSize(222), pkt.Header.CmdId)
-	assert.Equal(t, CmdIdSize(123), pkt.Header.MsgId)
+	assert.Equal(t, TCmd(111), pkt.Header.Flag)
+	assert.Equal(t, TCmd(222), pkt.Header.Cmd)
+	assert.Equal(t, TCmd(123), pkt.Header.Seq)
 	assert.Equal(t, 6, len(pkt.MsgBuff))
 	assert.Equal(t, byte(6), pkt.MsgBuff[5])
 	conn1.Close()
@@ -56,8 +56,8 @@ func TestProtocol(t *testing.T) {
 	p.SendPacket(&Packet{
 		Header: &Header{
 			Flag:  0x00,
-			CmdId: 200,
-			MsgId: 11,
+			Cmd: 200,
+			Seq: 11,
 		},
 		MsgBuff: []byte{1, 2, 3, 4, 5, 6},
 	})

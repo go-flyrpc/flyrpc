@@ -9,33 +9,33 @@ import (
 )
 
 const (
-	LFLAG_RPC   byte = 0x80
-	LFLAG_RESP  byte = 0x40
-	LFLAG_ERROR byte = 0x20
+	LFlagRPC   byte = 0x80
+	LFlagResp  byte = 0x40
+	LFlagError byte = 0x20
 	// LFLAG_NOTIFY byte = 0x10
 	// LFLAG_LEN_16 byte = 0x08
-	LFLAG_BUFFER_PACKET byte = 0x04
+	LFlagBuffer byte = 0x04
 	// LFLAG_ZIP         byte = 0x02
 	// LFLAG_ENCRYPT     byte = 0x01
 )
 
-type CmdIdSize uint8
-type MsgIdSize uint8
-type LengthSize uint16
+type TCmd uint8
+type TSeq uint8
+type TLength uint16
 
-const MaxLength = ^LengthSize(0)
+const MaxLength = ^TLength(0)
 
 type Header struct {
-	Flag  byte
-	CmdId CmdIdSize
-	MsgId MsgIdSize
+	Flag byte
+	Cmd  TCmd
+	Seq  TSeq
 }
 
 type Packet struct {
 	// TODO remove this from packet
 	Protocol Protocol
 	ClientId int
-	Length   LengthSize
+	Length   TLength
 	Header   *Header
 	MsgBuff  []byte
 }
@@ -48,7 +48,6 @@ type Protocol interface {
 }
 
 type protocol struct {
-	Id          int
 	IsMultiplex bool
 	Conn        net.Conn
 	Reader      *bufio.Reader
@@ -84,10 +83,10 @@ func (p *protocol) OnPacket(handler PacketHandler) {
 func (p *protocol) SendPacket(pk *Packet) error {
 	if p.Writer == nil {
 		p.Close()
-		return NewFlyError(ERR_WRITER_CLOSED, nil)
+		return NewFlyError(ErrWriterClosed, nil)
 	}
 	if p.Writer.Available() == 0 {
-		return NewFlyError(ERR_WRITER_CLOSED, nil)
+		return NewFlyError(ErrWriterClosed, nil)
 	}
 	if p.IsMultiplex {
 		binary.Write(p.Writer, binary.BigEndian, pk.ClientId)
@@ -96,9 +95,9 @@ func (p *protocol) SendPacket(pk *Packet) error {
 	// DO zip
 	// buff = zip(buff)
 	// }
-	pk.Length = LengthSize(len(pk.MsgBuff))
+	pk.Length = TLength(len(pk.MsgBuff))
 	if pk.Length > MaxLength {
-		return NewFlyError(ERR_BUFF_TO_LONG, nil)
+		return NewFlyError(ErrBuffTooLong, nil)
 	}
 	binary.Write(p.Writer, binary.BigEndian, pk.Header)
 	log.Println("SendPacket:", pk.Header)
@@ -129,7 +128,7 @@ func (p *protocol) handleStream() {
 }
 
 func (p *protocol) ReadPacket() (*Packet, error) {
-	var clientId = p.Id
+	var clientId = 0
 	if p.IsMultiplex {
 		err := binary.Read(p.Reader, binary.BigEndian, &clientId)
 		if err != nil {
@@ -143,7 +142,7 @@ func (p *protocol) ReadPacket() (*Packet, error) {
 		return nil, err
 	}
 	// read length
-	var length LengthSize
+	var length TLength
 	err = binary.Read(p.Reader, binary.BigEndian, &length)
 	if err != nil {
 		return nil, err

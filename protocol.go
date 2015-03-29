@@ -70,10 +70,11 @@ func newProtocol(reader io.Reader, writer io.Writer, isMultiplex bool) Protocol 
 	return p
 }
 
-func (p *protocol) Close() {
+func (p *protocol) Close() error {
 	if p.Conn != nil {
-		p.Conn.Close()
+		return p.Conn.Close()
 	}
+	return nil
 }
 
 func (p *protocol) OnPacket(handler PacketHandler) {
@@ -82,14 +83,16 @@ func (p *protocol) OnPacket(handler PacketHandler) {
 
 func (p *protocol) SendPacket(pk *Packet) error {
 	if p.Writer == nil {
-		p.Close()
-		return NewFlyError(ErrWriterClosed, nil)
+		err := p.Close()
+		return NewFlyError(ErrWriterClosed, err)
 	}
 	if p.Writer.Available() == 0 {
 		return NewFlyError(ErrWriterClosed, nil)
 	}
 	if p.IsMultiplex {
-		binary.Write(p.Writer, binary.BigEndian, pk.ClientId)
+		if err := binary.Write(p.Writer, binary.BigEndian, pk.ClientId); err != nil {
+			return err
+		}
 	}
 	// if support zip {
 	// DO zip
@@ -99,14 +102,19 @@ func (p *protocol) SendPacket(pk *Packet) error {
 	if pk.Length > MaxLength {
 		return NewFlyError(ErrBuffTooLong, nil)
 	}
-	binary.Write(p.Writer, binary.BigEndian, pk.Header)
+	if err := binary.Write(p.Writer, binary.BigEndian, pk.Header); err != nil {
+		return err
+	}
 	log.Println("SendPacket:", pk.Header)
 
-	binary.Write(p.Writer, binary.BigEndian, pk.Length)
+	if err := binary.Write(p.Writer, binary.BigEndian, pk.Length); err != nil {
+		return err
+	}
 	log.Println("SendPacket:", pk.MsgBuff)
-	p.Writer.Write(pk.MsgBuff)
-	p.Writer.Flush()
-	return nil
+	if _, err := p.Writer.Write(pk.MsgBuff); err != nil {
+		return err
+	}
+	return p.Writer.Flush()
 }
 
 func (p *protocol) handleStream() {
@@ -118,7 +126,7 @@ func (p *protocol) handleStream() {
 			if err != io.EOF {
 				log.Println("error", err)
 			}
-			p.Close()
+			_ = p.Close()
 			break
 		}
 		for _, handler := range p.handlers {

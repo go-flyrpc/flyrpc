@@ -20,7 +20,8 @@ func TestServer(t *testing.T) {
 		log.Println("server on", in)
 		// call client cmd 2 and response another user
 		log.Println("server call 2")
-		ctx.Call(2, reply, in)
+		err := ctx.Call(2, reply, in)
+		assert.Nil(t, err)
 		log.Println("client response", reply)
 		reply.Id += 10
 		return reply
@@ -36,7 +37,8 @@ func TestServer(t *testing.T) {
 	})
 	reply := new(TestUser)
 	log.Println("client call 1")
-	client.Call(1, reply, &TestUser{Id: 100})
+	err = client.Call(1, reply, &TestUser{Id: 100})
+	assert.Nil(t, err)
 	log.Println("server response", reply)
 
 	assert.Equal(t, 111, reply.Id)

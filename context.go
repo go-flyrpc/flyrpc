@@ -66,10 +66,12 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	// set replyChan for cmd | seq
 	chanId := ctx.getChanId(header)
 	ctx.replyChans[chanId] = replyChan
-	ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff})
+	defer delete(ctx.replyChans, chanId)
+	if err := ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff}); err != nil {
+		return err
+	}
 	// wait to get response
 	rBuff := <-replyChan
-	delete(ctx.replyChans, chanId)
 	return ctx.serializer.Unmarshal(rBuff, reply)
 }
 
@@ -85,7 +87,9 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 		return
 	}
 	ctx.Packet = pkt
-	ctx.Router.emitPacket(ctx, pkt)
+	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
+		log.Fatal("Error to call packet", err)
+	}
 }
 
 func (ctx *Context) getNextSeq() TSeq {

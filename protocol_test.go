@@ -25,7 +25,7 @@ func TestProtocolReal(t *testing.T) {
 		cpkt <- pkt
 	})
 
-	p1.SendPacket(&Packet{
+	err = p1.SendPacket(&Packet{
 		Header: &Header{
 			Flag: 111,
 			Cmd:  222,
@@ -33,6 +33,7 @@ func TestProtocolReal(t *testing.T) {
 		},
 		MsgBuff: []byte{1, 2, 3, 4, 5, 6},
 	})
+	assert.Nil(t, err)
 
 	pkt := <-cpkt
 	log.Println("return packet", pkt.MsgBuff)
@@ -41,7 +42,8 @@ func TestProtocolReal(t *testing.T) {
 	assert.Equal(t, TCmd(123), pkt.Header.Seq)
 	assert.Equal(t, 6, len(pkt.MsgBuff))
 	assert.Equal(t, byte(6), pkt.MsgBuff[5])
-	conn1.Close()
+	err = conn1.Close()
+	assert.Nil(t, err)
 }
 
 /*

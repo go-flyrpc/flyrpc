@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	LFlagRPC   byte = 0x80
-	LFlagResp  byte = 0x40
-	LFlagError byte = 0x20
+	LFlagRPC    byte = 0x80
+	LFlagResp   byte = 0x40
+	LFlagError  byte = 0x20
+	LFlagBuffer byte = 0x10
 	// LFLAG_NOTIFY byte = 0x10
 	// LFLAG_LEN_16 byte = 0x08
-	LFlagBuffer byte = 0x04
 	// LFLAG_ZIP         byte = 0x02
 	// LFLAG_ENCRYPT     byte = 0x01
 )
@@ -139,6 +139,7 @@ func (p *protocol) handleStream() {
 
 func (p *protocol) ReadPacket() (*Packet, error) {
 	var clientId = 0
+	// only for server
 	if p.IsMultiplex {
 		err := binary.Read(p.Reader, binary.BigEndian, &clientId)
 		if err != nil {

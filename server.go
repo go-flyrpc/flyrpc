@@ -11,13 +11,14 @@ type ServerOpts struct {
 }
 
 type Server struct {
-	Router       Router
-	multiplex    bool
-	serializer   Serializer
-	listener     net.Listener
-	transports   []*transport
-	contextMap   map[int]*Context
-	nextClientId int
+	Router          Router
+	multiplex       bool
+	serializer      Serializer
+	listener        net.Listener
+	transports      []*transport
+	contextMap      map[int]*Context
+	connectHandlers []func(*Context)
+	nextClientId    int
 }
 
 type transport struct {
@@ -34,12 +35,13 @@ func NewServer(opts *ServerOpts) *Server {
 		opts.Serializer = JSON
 	}
 	return &Server{
-		Router:       NewRouter(opts.Serializer),
-		multiplex:    opts.Multiplex,
-		serializer:   opts.Serializer,
-		transports:   make([]*transport, 0),
-		contextMap:   make(map[int]*Context),
-		nextClientId: 1,
+		Router:          NewRouter(opts.Serializer),
+		multiplex:       opts.Multiplex,
+		serializer:      opts.Serializer,
+		transports:      make([]*transport, 0),
+		contextMap:      make(map[int]*Context),
+		connectHandlers: make([]func(*Context), 0),
+		nextClientId:    1,
 	}
 }
 
@@ -61,8 +63,18 @@ func (s *Server) IsMultiplex() bool {
 	return s.multiplex
 }
 
+func (s *Server) OnConnect(connectHandler func(*Context)) {
+	s.connectHandlers = append(s.connectHandlers, connectHandler)
+}
+
 func (s *Server) OnMessage(cmd TCmd, handler HandlerFunc) {
 	s.Router.AddRoute(cmd, handler)
+}
+
+func (s *Server) emitContext(ctx *Context) {
+	for _, handler := range s.connectHandlers {
+		go handler(ctx)
+	}
 }
 
 func (s *Server) SendMessage(clientId int, cmd TCmd, v Message) error {
@@ -81,6 +93,7 @@ func (s *Server) Listen(addr string) error {
 
 func (s *Server) HandleConnections() {
 	for {
+		log.Println(s.listener)
 		conn, err := s.listener.Accept()
 		if err != nil {
 			log.Fatal("Accept error", err)
@@ -104,7 +117,8 @@ func newTransport(conn net.Conn, server *Server) *transport {
 		// TODO Make standalone frontend server
 		// TODO dispatch clientId to a connected backend server
 	} else {
-		transport.addClient(server.GetNextClientId())
+		ctx := transport.addClient(server.GetNextClientId())
+		server.emitContext(ctx)
 	}
 	protocol.OnPacket(transport.emitPacket)
 	return transport

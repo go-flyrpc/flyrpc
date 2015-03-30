@@ -82,6 +82,7 @@ func (p *protocol) OnPacket(handler PacketHandler) {
 }
 
 func (p *protocol) SendPacket(pk *Packet) error {
+	log.Println("Sending:", pk.ClientId, pk.Header, pk.MsgBuff)
 	if p.Writer == nil {
 		err := p.Close()
 		return NewFlyError(ErrWriterClosed, err)
@@ -105,12 +106,12 @@ func (p *protocol) SendPacket(pk *Packet) error {
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Header); err != nil {
 		return err
 	}
-	log.Println("SendPacket:", pk.Header)
+	log.Println("Length:", pk.Length)
 
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Length); err != nil {
 		return err
 	}
-	log.Println("SendPacket:", pk.MsgBuff)
+	log.Println("Buff:", pk.MsgBuff)
 	if _, err := p.Writer.Write(pk.MsgBuff); err != nil {
 		return err
 	}
@@ -129,6 +130,7 @@ func (p *protocol) handleStream() {
 			_ = p.Close()
 			break
 		}
+		// emitPacket
 		for _, handler := range p.handlers {
 			go handler(msg)
 		}

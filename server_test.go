@@ -12,8 +12,9 @@ func TestServer(t *testing.T) {
 	server := NewServer(&ServerOpts{
 		Serializer: Protobuf,
 	})
-	err := server.Listen("127.0.0.1:5555")
+	err := server.Listen("127.0.0.1:15555")
 	assert.Nil(t, err)
+	assert.NotNil(t, server.listener)
 
 	server.OnMessage(1, func(ctx *Context, in *TestUser) *TestUser {
 		reply := new(TestUser)
@@ -27,9 +28,10 @@ func TestServer(t *testing.T) {
 		return reply
 	})
 
+	log.Println("test l", server.listener)
 	go server.HandleConnections()
 
-	conn, err := net.Dial("tcp", "127.0.0.1:5555")
+	conn, err := net.Dial("tcp", "127.0.0.1:15555")
 	assert.Nil(t, err)
 	log.Println("connected")
 	client := NewClient(conn, Protobuf)

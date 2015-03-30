@@ -1,3 +1,10 @@
+/*
+FlyRPC provide a flexiable way to communicate between Server and Client.
+
+It support JSON, Msgpack, Protobuf serializer.
+
+It support Call/Response  or Send/Receive pattern.
+*/
 package fly
 
 import "strconv"

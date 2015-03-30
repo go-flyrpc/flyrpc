@@ -11,7 +11,6 @@ import "reflect"
 // func(*Context, Message) Message
 // func(*Context, Message) error
 // func(*Context, Message) (Message, error)
-
 type HandlerFunc interface{}
 
 type Route interface {

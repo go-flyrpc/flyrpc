@@ -2,12 +2,15 @@ package fly
 
 import "net"
 
+// Client use to connect server.
 type Client struct {
+	// extend with *Context
 	*Context
 	Router     Router
 	serializer Serializer
 }
 
+// Create new Client instance.
 func NewClient(conn net.Conn, serializer Serializer) *Client {
 	protocol := NewProtocol(conn, false)
 	router := NewRouter(serializer)

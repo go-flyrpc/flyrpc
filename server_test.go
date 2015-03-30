@@ -10,7 +10,7 @@ import (
 
 func TestServer(t *testing.T) {
 	server := NewServer(&ServerOpts{
-		serializer: Protobuf,
+		Serializer: Protobuf,
 	})
 	err := server.Listen("127.0.0.1:5555")
 	assert.Nil(t, err)
@@ -26,6 +26,8 @@ func TestServer(t *testing.T) {
 		reply.Id += 10
 		return reply
 	})
+
+	go server.HandleConnections()
 
 	conn, err := net.Dial("tcp", "127.0.0.1:5555")
 	assert.Nil(t, err)

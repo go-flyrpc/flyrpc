@@ -6,8 +6,8 @@ import (
 )
 
 type ServerOpts struct {
-	serializer Serializer
-	multiplex  bool
+	Serializer Serializer
+	Multiplex  bool
 }
 
 type Server struct {
@@ -30,13 +30,13 @@ func NewServer(opts *ServerOpts) *Server {
 	if opts == nil {
 		opts = &ServerOpts{}
 	}
-	if opts.serializer == nil {
-		opts.serializer = JSON
+	if opts.Serializer == nil {
+		opts.Serializer = JSON
 	}
 	return &Server{
-		Router:       NewRouter(opts.serializer),
-		multiplex:    opts.multiplex,
-		serializer:   opts.serializer,
+		Router:       NewRouter(opts.Serializer),
+		multiplex:    opts.Multiplex,
+		serializer:   opts.Serializer,
 		transports:   make([]*transport, 0),
 		contextMap:   make(map[int]*Context),
 		nextClientId: 1,
@@ -75,15 +75,17 @@ func (s *Server) Listen(addr string) error {
 		return err
 	}
 	s.listener = listener
-	go s.handleConnections()
+	// go s.handleConnections()
 	return nil
 }
 
-func (s *Server) handleConnections() {
+func (s *Server) HandleConnections() {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
 			log.Fatal("Accept error", err)
+		} else {
+			log.Println("New Connection", conn.RemoteAddr())
 		}
 		s.transports = append(s.transports, newTransport(conn, s))
 	}

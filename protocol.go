@@ -19,7 +19,7 @@ const (
 	// LFLAG_ENCRYPT     byte = 0x01
 )
 
-type TCmd uint8
+type TCmd uint16
 type TSeq uint8
 type TLength uint16
 
@@ -82,6 +82,7 @@ func (p *protocol) OnPacket(handler PacketHandler) {
 }
 
 func (p *protocol) SendPacket(pk *Packet) error {
+	// FIXME length, header position wrong.
 	log.Println("Sending:", pk.ClientId, pk.Header, pk.MsgBuff)
 	if p.Writer == nil {
 		err := p.Close()
@@ -138,6 +139,7 @@ func (p *protocol) handleStream() {
 }
 
 func (p *protocol) ReadPacket() (*Packet, error) {
+	// FIXME length, header position wrong.
 	var clientId = 0
 	// only for server
 	if p.IsMultiplex {

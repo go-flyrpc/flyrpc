@@ -96,14 +96,17 @@ TCP/UDP/WS            TCP/UDP/WS               TCP/UDP/WS
 
 # 协议
 ## 分包协议
+2byte
 length|buff
 
 ## TODO 多路复用协议
-clientIds | length | buff
+byte    | n byte    | 2 byte | nbyte
+idcount | clientIds | length | buff
 
 NOTICE:
 线程安全，防止两个客户端连接写同步
 
 ## 消息协议
 
-flag|cmd|seq|serialized-buff
+byte | 2byte | byte | nbyte
+flag | cmd   | seq  | serialized-buff

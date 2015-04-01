@@ -80,7 +80,7 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {
-			log.Fatal("No channel found, pkt is :", pkt)
+			log.Println("No channel found, pkt is :", pkt.Header, chanId)
 			return
 		}
 		replyChan <- pkt.MsgBuff
@@ -88,7 +88,7 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 	}
 	ctx.Packet = pkt
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
-		log.Fatal("Error to call packet", err)
+		log.Println("Error to call packet", err)
 	}
 }
 

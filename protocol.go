@@ -107,7 +107,7 @@ func (p *protocol) SendPacket(pk *Packet) error {
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Header); err != nil {
 		return err
 	}
-	log.Println("Length:", pk.Length)
+	// log.Println("Length:", pk.Length)
 
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Length); err != nil {
 		return err
@@ -165,7 +165,7 @@ func (p *protocol) ReadPacket() (*Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("return packet", buf)
+	// log.Println("return packet", buf)
 	packet := &Packet{
 		ClientId: clientId,
 		Length:   length,

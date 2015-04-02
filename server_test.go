@@ -55,12 +55,15 @@ func testClient(t *testing.T, wg *sync.WaitGroup) {
 		return &TestUser{Id: in.Id + 1}
 	})
 	reply := new(TestUser)
-	client.OnMessage(1, func(ctx *Context, in *TestUser) {
-		log.Println("client call 1")
-		err = client.Call(1, reply, &TestUser{Id: 100})
-		assert.Nil(t, err)
-		log.Println("server response", reply)
-		assert.Equal(t, 111, reply.Id)
-		wg.Done()
-	})
+	err = client.Call(1, reply, &TestUser{Id: 100})
+	assert.Nil(t, err)
+	// wg.Done()
+	// client.OnMessage(1, func(ctx *Context, in *TestUser) {
+	// 	log.Println("client call 1")
+	// 	err = client.Call(1, reply, &TestUser{Id: 100})
+	// 	assert.Nil(t, err)
+	// 	log.Println("server response", reply)
+	// 	assert.Equal(t, 111, reply.Id)
+	// 	wg.Done()
+	// })
 }

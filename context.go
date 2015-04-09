@@ -50,7 +50,7 @@ func (ctx *Context) SendMessage(cmd TCmd, message Message) error {
 }
 
 func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
-	log.Println("Call", cmd, message)
+	log.Println(ctx.ClientId, "Call", cmd, message)
 	buff, err := ctx.serializer.Marshal(message)
 	if err != nil {
 		return err
@@ -67,16 +67,16 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	// set replyChan for cmd | seq
 	chanId := ctx.getChanId(header)
 	ctx.replyChans[chanId] = replyChan
-	log.Println("make chan", ctx, chanId, ctx.replyChans)
+	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
 	defer delete(ctx.replyChans, chanId)
-	log.Println("make chan", ctx, chanId, ctx.replyChans)
+	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
 	if err := ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff}); err != nil {
 		return err
 	}
-	log.Println("make chan", ctx, chanId, ctx.replyChans)
+	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
 	// wait to get response
 	rBuff := <-replyChan
-	log.Println("make chan", ctx, chanId, ctx.replyChans)
+	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
 	return ctx.serializer.Unmarshal(rBuff, reply)
 }
 
@@ -85,8 +85,8 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {
-			log.Println("No channel found, pkt is :", pkt.Header, chanId)
-			log.Println("replyChans", ctx, ctx.replyChans)
+			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt.Header, chanId)
+			log.Println(ctx.ClientId, "replyChans", ctx, ctx.replyChans)
 			return
 		}
 		replyChan <- pkt.MsgBuff
@@ -94,7 +94,7 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 	}
 	ctx.Packet = pkt
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
-		log.Println("Error to call packet", err)
+		log.Println(ctx.ClientId, "Error to call packet", err)
 	}
 }
 

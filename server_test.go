@@ -17,12 +17,12 @@ func TestServer(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, server.listener)
 
-	server.OnMessage(1, func(ctx *Context, in *TestUser) *TestUser {
+	server.OnMessage(21, func(ctx *Context, in *TestUser) *TestUser {
 		reply := new(TestUser)
 		log.Println("server on", in)
 		// call client cmd 2 and response another user
 		log.Println("server call 2")
-		err := ctx.Call(2, reply, in)
+		err := ctx.Call(12, reply, in)
 		assert.Nil(t, err)
 		log.Println("client response", reply)
 		reply.Id += 10
@@ -32,38 +32,36 @@ func TestServer(t *testing.T) {
 	server.OnConnect(func(ctx *Context) {
 		log.Println("connected")
 		in := new(TestUser)
-		err := ctx.SendMessage(2, in)
+		err := ctx.SendMessage(11, in)
 		assert.Nil(t, err)
 	})
 
 	go server.HandleConnections()
 
 	wg := &sync.WaitGroup{}
-	for i := 0; i < 1; i++ {
-		testClient(t, wg)
+	for i := 0; i < 100; i++ {
+		testClient(t, wg, i)
 	}
 	wg.Wait()
 }
 
-func testClient(t *testing.T, wg *sync.WaitGroup) {
+func testClient(t *testing.T, wg *sync.WaitGroup, i int) {
 	wg.Add(1)
 	conn, err := net.Dial("tcp", "127.0.0.1:15555")
 	assert.Nil(t, err)
 	client := NewClient(conn, Protobuf)
-	client.OnMessage(2, func(ctx *Context, in *TestUser) *TestUser {
+	client.Context.ClientId = 100 + i
+	client.OnMessage(12, func(ctx *Context, in *TestUser) *TestUser {
 		log.Println("client on", in)
 		return &TestUser{Id: in.Id + 1}
 	})
 	reply := new(TestUser)
-	err = client.Call(1, reply, &TestUser{Id: 100})
-	assert.Nil(t, err)
-	wg.Done()
-	// client.OnMessage(1, func(ctx *Context, in *TestUser) {
-	// 	log.Println("client call 1")
-	// 	err = client.Call(1, reply, &TestUser{Id: 100})
-	// 	assert.Nil(t, err)
-	// 	log.Println("server response", reply)
-	// 	assert.Equal(t, 111, reply.Id)
-	// 	wg.Done()
-	// })
+	client.OnMessage(11, func(ctx *Context, in *TestUser) {
+		log.Println("client call 1")
+		err = client.Call(21, reply, &TestUser{Id: 100})
+		assert.Nil(t, err)
+		log.Println("server response", reply)
+		assert.Equal(t, 111, reply.Id)
+		wg.Done()
+	})
 }

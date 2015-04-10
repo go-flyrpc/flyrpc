@@ -67,16 +67,13 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	// set replyChan for cmd | seq
 	chanId := ctx.getChanId(header)
 	ctx.replyChans[chanId] = replyChan
-	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
+	log.Println(ctx.ClientId, "make chan", chanId, ctx.replyChans)
 	defer delete(ctx.replyChans, chanId)
-	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
 	if err := ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff}); err != nil {
 		return err
 	}
-	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
 	// wait to get response
 	rBuff := <-replyChan
-	log.Println(ctx.ClientId, "make chan", ctx, chanId, ctx.replyChans)
 	return ctx.serializer.Unmarshal(rBuff, reply)
 }
 
@@ -93,6 +90,7 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 		return
 	}
 	ctx.Packet = pkt
+	log.Println(ctx.ClientId, "OnMessage", pkt.Header.Cmd)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
 		log.Println(ctx.ClientId, "Error to call packet", err)
 	}

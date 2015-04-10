@@ -41,7 +41,7 @@ func NewServer(opts *ServerOpts) *Server {
 		transports:      make([]*transport, 0),
 		contextMap:      make(map[int]*Context),
 		connectHandlers: make([]func(*Context), 0),
-		nextClientId:    1,
+		nextClientId:    0,
 	}
 }
 
@@ -116,16 +116,16 @@ func newTransport(conn net.Conn, server *Server) *transport {
 		// For a frontend multiplex server
 		// TODO Make standalone frontend server
 		// TODO dispatch clientId to a connected backend server
+		protocol.OnPacket(transport.emitPacket)
 	} else {
 		ctx := transport.addClient(server.GetNextClientId())
 		server.emitContext(ctx)
+		protocol.OnPacket(ctx.emitPacket)
 	}
-	protocol.OnPacket(transport.emitPacket)
 	return transport
 }
 
 func (t *transport) emitPacket(pkt *Packet) {
-	// TODO fix non clientId
 	clientId := pkt.ClientId
 	t.getContext(clientId).emitPacket(pkt)
 }

@@ -24,8 +24,11 @@ const (
 )
 
 var messages = map[int]string{
-	ErrNoWriter:     "NO_WRITER",
-	ErrWriterClosed: "WRITER_CLOSED",
+	ErrNotFound:        "NOT_FOUND",
+	ErrBuffTooLong:     "BUFF_TOO_LONG",
+	ErrNoWriter:        "NO_WRITER",
+	ErrWriterClosed:    "WRITER_CLOSED",
+	ErrNotProtoMessage: "NOT_PROTO_MESSAGE",
 }
 
 type flyError struct {

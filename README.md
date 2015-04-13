@@ -56,6 +56,10 @@ func(*Context, in Message)
 
 #### Client.Call(cmd, Message) (Message, error)
 
+#### Client.Ping(cmd, size)
+
+#### Client.OnPong(cmd, pongSize)
+
 ## 待定
 ```
 type ClientStub struct {

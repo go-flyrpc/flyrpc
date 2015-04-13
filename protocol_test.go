@@ -27,7 +27,7 @@ func TestProtocolReal(t *testing.T) {
 
 	err = p1.SendPacket(&Packet{
 		Header: &Header{
-			Flag: 111,
+			Flag: TypeRPC | RPCFlagResp | RPCFlagError,
 			Cmd:  222,
 			Seq:  123,
 		},

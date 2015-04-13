@@ -133,7 +133,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			return err
 		}
 		return ctx.SendPacket(
-			LFlagRPC|LFlagResp,
+			TypeRPC|RPCFlagResp,
 			pkt.Header.Cmd,
 			pkt.Header.Seq,
 			bytes)

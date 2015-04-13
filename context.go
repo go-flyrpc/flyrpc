@@ -78,7 +78,7 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 }
 
 func (ctx *Context) emitPacket(pkt *Packet) {
-	if pkt.Header.Flag&LFlagResp != 0 {
+	if pkt.Header.Flag&RPCFlagResp != 0 {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {

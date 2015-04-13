@@ -12,8 +12,9 @@ import "strconv"
 const (
 	// 10000 - 20000 client error
 
-	ErrNotFound    int = 10000
-	ErrBuffTooLong int = 11000
+	ErrNotFound       int = 10000
+	ErrUnknownSubType int = 10001
+	ErrBuffTooLong    int = 11000
 	// 20000 + server error
 
 	ErrNoWriter     int = 21000
@@ -29,6 +30,7 @@ var messages = map[int]string{
 	ErrNoWriter:        "NO_WRITER",
 	ErrWriterClosed:    "WRITER_CLOSED",
 	ErrNotProtoMessage: "NOT_PROTO_MESSAGE",
+	ErrUnknownSubType:  "UNKNOWN_SUB_TYPE",
 }
 
 type flyError struct {

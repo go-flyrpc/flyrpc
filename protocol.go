@@ -8,11 +8,24 @@ import (
 	"net"
 )
 
+// TypeBits - bits of sub protocol
+// TypeRPC  - type of RPC. Main feature
+// TypePing - type of Ping. Keepalive
+// TypeHello - type of Hello. Tell the client information related with protocol, like version, zip, supported encoding
 const (
-	LFlagRPC    byte = 0x80
-	LFlagResp   byte = 0x40
-	LFlagError  byte = 0x20
-	LFlagBuffer byte = 0x10
+	FlagBitsType byte = 0xb0 // 11000000
+	TypeRPC      byte = 0xb0 // 11000000
+	TypePing     byte = 0x80 // 10000000
+	TypeHello    byte = 0x40 // 01000000
+	TypeExt2     byte = 0x00 // 00000000
+)
+
+const (
+	RPCFlagResp   byte = 0x01
+	RPCFlagError  byte = 0x02
+	RPCFlagBuffer byte = 0x04
+	PingFlagPing  byte = 0x01
+	PingFlagPong  byte = 0x02
 	// LFLAG_NOTIFY byte = 0x10
 	// LFLAG_LEN_16 byte = 0x08
 	// LFLAG_ZIP         byte = 0x02
@@ -35,6 +48,7 @@ type Packet struct {
 	// TODO remove this from packet
 	Protocol Protocol
 	ClientId int
+	SubType  byte
 	Length   TLength
 	Header   *Header
 	MsgBuff  []byte
@@ -154,9 +168,23 @@ func (p *protocol) ReadPacket() (*Packet, error) {
 	if err != nil {
 		return nil, err
 	}
+	subType := header.Flag & FlagBitsType
+	if subType == TypeRPC {
+		return p.readRPCPacket(header, clientId)
+	}
+	if subType == TypePing {
+		return p.readPingPacket(header, clientId)
+	}
+	if subType == TypeHello {
+		return p.readHelloPacket(header, clientId)
+	}
+	return nil, NewFlyError(ErrUnknownSubType)
+}
+
+func (p *protocol) readRPCPacket(header *Header, clientId int) (*Packet, error) {
 	// read length
 	var length TLength
-	err = binary.Read(p.Reader, binary.BigEndian, &length)
+	err := binary.Read(p.Reader, binary.BigEndian, &length)
 	if err != nil {
 		return nil, err
 	}
@@ -168,9 +196,32 @@ func (p *protocol) ReadPacket() (*Packet, error) {
 	// log.Println("return packet", buf)
 	packet := &Packet{
 		ClientId: clientId,
+		SubType:  TypeRPC,
 		Length:   length,
 		Header:   header,
 		MsgBuff:  buf,
 	}
 	return packet, nil
+}
+
+func (p *protocol) readPingPacket(header *Header, clientId int) (*Packet, error) {
+	// TODO support sized ping packet
+	return &Packet{
+		ClientId: clientId,
+		SubType:  TypePing,
+		Length:   0,
+		Header:   header,
+		MsgBuff:  nil,
+	}, nil
+}
+
+func (p *protocol) readHelloPacket(header *Header, clientId int) (*Packet, error) {
+	// TODO Well design hello protocol
+	return &Packet{
+		ClientId: clientId,
+		SubType:  TypeHello,
+		Length:   0,
+		Header:   header,
+		MsgBuff:  nil,
+	}, nil
 }

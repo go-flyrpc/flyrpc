@@ -54,11 +54,10 @@ type Packet struct {
 	MsgBuff  []byte
 }
 
-type PacketHandler func(*Packet)
-
 type Protocol interface {
-	OnPacket(PacketHandler)
+	ReadPacket() (*Packet, error)
 	SendPacket(*Packet) error
+	Close() error
 }
 
 type protocol struct {
@@ -66,7 +65,6 @@ type protocol struct {
 	Conn        net.Conn
 	Reader      *bufio.Reader
 	Writer      *bufio.Writer
-	handlers    []PacketHandler
 }
 
 func NewProtocol(conn net.Conn, isMultiplex bool) Protocol {
@@ -78,9 +76,7 @@ func newProtocol(reader io.Reader, writer io.Writer, isMultiplex bool) Protocol 
 		IsMultiplex: isMultiplex,
 		Reader:      bufio.NewReader(reader),
 		Writer:      bufio.NewWriter(writer),
-		handlers:    make([]PacketHandler, 0),
 	}
-	go p.handleStream()
 	return p
 }
 
@@ -89,10 +85,6 @@ func (p *protocol) Close() error {
 		return p.Conn.Close()
 	}
 	return nil
-}
-
-func (p *protocol) OnPacket(handler PacketHandler) {
-	p.handlers = append(p.handlers, handler)
 }
 
 func (p *protocol) SendPacket(pk *Packet) error {
@@ -131,25 +123,6 @@ func (p *protocol) SendPacket(pk *Packet) error {
 		return err
 	}
 	return p.Writer.Flush()
-}
-
-func (p *protocol) handleStream() {
-	// 协议处理函数
-	for {
-		msg, err := p.ReadPacket()
-		log.Println("readPacket:", msg, err)
-		if err != nil {
-			if err != io.EOF {
-				log.Println("error", err)
-			}
-			_ = p.Close()
-			break
-		}
-		// emitPacket
-		for _, handler := range p.handlers {
-			go handler(msg)
-		}
-	}
 }
 
 func (p *protocol) ReadPacket() (*Packet, error) {

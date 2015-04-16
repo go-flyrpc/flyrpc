@@ -17,7 +17,7 @@ func TestRouter(t *testing.T) {
 	// inbuff := &bytes.Buffer{}
 	// outbuff := &bytes.Buffer{}
 	// protocol := newProtocol(inbuff, outbuff, false)
-	protocol := new(MockProtocol)
+	protocol := NewMockProtocol()
 	ctx := NewContext(protocol, r, 0, s)
 
 	r.AddRoute(1, func(ctx *Context, u *TestUser) {

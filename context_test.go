@@ -9,32 +9,42 @@ import (
 
 func TestContextSendMessage(t *testing.T) {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	protocol := new(MockProtocol)
+	protocol := NewMockProtocol()
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
-	protocol.OnPacket(context.emitPacket)
+
 	c := make(chan *TestUser, 1)
 	router.AddRoute(1, func(ctx *Context, in *TestUser) {
 		c <- in
 	})
 	err := context.SendMessage(1, &TestUser{Id: 123})
 	assert.Nil(t, err)
+	pkt, err := protocol.ReadPacket()
+	context.emitPacket(pkt)
 	u := <-c
 	assert.Equal(t, 123, u.Id)
 }
 
 func TestContextCall(t *testing.T) {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	protocol := new(MockProtocol)
+	protocol := NewMockProtocol()
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
-	protocol.OnPacket(context.emitPacket)
 	router.AddRoute(1, func(ctx *Context, in *TestUser) *TestUser {
 		return &TestUser{Id: in.Id + 1}
 	})
 	var reply = new(TestUser)
+	go func() {
+		for {
+			pkt, err := protocol.ReadPacket()
+			context.emitPacket(pkt)
+			if err != nil {
+				break
+			}
+		}
+	}()
 	err := context.Call(1, reply, &TestUser{Id: 123})
 	assert.Nil(t, err)
 	assert.Equal(t, 124, reply.Id)

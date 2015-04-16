@@ -39,7 +39,7 @@ func TestServer(t *testing.T) {
 	go server.HandleConnections()
 
 	wg := &sync.WaitGroup{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 2; i++ {
 		testClient(t, wg, i)
 	}
 	wg.Wait()

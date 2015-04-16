@@ -20,14 +20,11 @@ func TestProtocolReal(t *testing.T) {
 	assert.Nil(t, err2)
 	p2 := NewProtocol(conn2, false)
 
-	cpkt := make(chan *Packet, 1)
-	p2.OnPacket(func(pkt *Packet) {
-		cpkt <- pkt
-	})
+	flag := TypeRPC | RPCFlagResp | RPCFlagError
 
 	err = p1.SendPacket(&Packet{
 		Header: &Header{
-			Flag: TypeRPC | RPCFlagResp | RPCFlagError,
+			Flag: flag,
 			Cmd:  222,
 			Seq:  123,
 		},
@@ -35,9 +32,10 @@ func TestProtocolReal(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	pkt := <-cpkt
+	pkt, err := p2.ReadPacket()
+
 	log.Println("return packet", pkt.MsgBuff)
-	assert.Equal(t, TCmd(111), pkt.Header.Flag)
+	assert.Equal(t, TCmd(flag), pkt.Header.Flag)
 	assert.Equal(t, TCmd(222), pkt.Header.Cmd)
 	assert.Equal(t, TCmd(123), pkt.Header.Seq)
 	assert.Equal(t, 6, len(pkt.MsgBuff))
@@ -71,16 +69,25 @@ func TestProtocol(t *testing.T) {
 */
 
 type MockProtocol struct {
-	handlers []PacketHandler
+	packetChan chan *Packet
+}
+
+func NewMockProtocol() *MockProtocol {
+	return &MockProtocol{
+		packetChan: make(chan *Packet, 10),
+	}
 }
 
 func (mp *MockProtocol) SendPacket(pkt *Packet) error {
-	for _, handler := range mp.handlers {
-		go handler(pkt)
-	}
+	mp.packetChan <- pkt
 	return nil
 }
 
-func (mp *MockProtocol) OnPacket(handler PacketHandler) {
-	mp.handlers = append(mp.handlers, handler)
+func (mp *MockProtocol) ReadPacket() (*Packet, error) {
+	pkt := <-mp.packetChan
+	return pkt, nil
+}
+
+func (mp *MockProtocol) Close() error {
+	return nil
 }

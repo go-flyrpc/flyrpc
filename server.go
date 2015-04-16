@@ -1,6 +1,7 @@
 package fly
 
 import (
+	"io"
 	"log"
 	"net"
 )
@@ -24,6 +25,8 @@ type Server struct {
 type transport struct {
 	protocol  Protocol
 	server    *Server
+	multiplex bool
+	context   *Context
 	clientIds []int
 }
 
@@ -116,18 +119,37 @@ func newTransport(conn net.Conn, server *Server) *transport {
 		// For a frontend multiplex server
 		// TODO Make standalone frontend server
 		// TODO dispatch clientId to a connected backend server
-		protocol.OnPacket(transport.emitPacket)
+		transport.multiplex = true
 	} else {
 		ctx := transport.addClient(server.GetNextClientId())
+		transport.context = ctx
 		server.emitContext(ctx)
-		protocol.OnPacket(ctx.emitPacket)
 	}
+	go transport.handlePackets()
 	return transport
 }
 
+func (t *transport) handlePackets() {
+	for {
+		packet, err := t.protocol.ReadPacket()
+		if err != nil {
+			if err != io.EOF {
+				log.Println("Close on error", err)
+			}
+			t.Close()
+			break
+		}
+		t.emitPacket(packet)
+	}
+}
+
 func (t *transport) emitPacket(pkt *Packet) {
-	clientId := pkt.ClientId
-	t.getContext(clientId).emitPacket(pkt)
+	if t.multiplex {
+		clientId := pkt.ClientId
+		t.getContext(clientId).emitPacket(pkt)
+	} else {
+		t.context.emitPacket(pkt)
+	}
 }
 
 func (t *transport) getContext(clientId int) *Context {

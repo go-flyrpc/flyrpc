@@ -83,7 +83,6 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {
 			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt.Header, chanId)
-			log.Println(ctx.ClientId, "replyChans", ctx, ctx.replyChans)
 			return
 		}
 		replyChan <- pkt.MsgBuff

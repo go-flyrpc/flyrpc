@@ -17,7 +17,7 @@ const (
 	TypeRPC      byte = 0xb0 // 11000000
 	TypePing     byte = 0x80 // 10000000
 	TypeHello    byte = 0x40 // 01000000
-	TypeExt2     byte = 0x00 // 00000000
+	TypeMessage  byte = 0x00 // 00000000
 )
 
 const (
@@ -68,10 +68,12 @@ type protocol struct {
 }
 
 func NewProtocol(conn net.Conn, isMultiplex bool) Protocol {
-	return newProtocol(conn, conn, isMultiplex)
+	protocol := newProtocol(conn, conn, isMultiplex)
+	protocol.Conn = conn
+	return protocol
 }
 
-func newProtocol(reader io.Reader, writer io.Writer, isMultiplex bool) Protocol {
+func newProtocol(reader io.Reader, writer io.Writer, isMultiplex bool) *protocol {
 	p := &protocol{
 		IsMultiplex: isMultiplex,
 		Reader:      bufio.NewReader(reader),
@@ -142,16 +144,14 @@ func (p *protocol) ReadPacket() (*Packet, error) {
 		return nil, err
 	}
 	subType := header.Flag & FlagBitsType
-	if subType == TypeRPC {
-		return p.readRPCPacket(header, clientId)
-	}
 	if subType == TypePing {
 		return p.readPingPacket(header, clientId)
 	}
 	if subType == TypeHello {
 		return p.readHelloPacket(header, clientId)
 	}
-	return nil, NewFlyError(ErrUnknownSubType)
+	// TypeRPC | TypeMessage
+	return p.readRPCPacket(header, clientId)
 }
 
 func (p *protocol) readRPCPacket(header *Header, clientId int) (*Packet, error) {

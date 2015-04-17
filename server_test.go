@@ -1,7 +1,6 @@
 package fly
 
 import (
-	"log"
 	"net"
 	"sync"
 	"testing"
@@ -9,6 +8,57 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func makeClient(t *testing.T) *Client {
+	conn, err := net.Dial("tcp", "127.0.0.1:15555")
+	assert.Nil(t, err)
+	return NewClient(conn, Protobuf)
+}
+
+func TestServerMultiConnect(t *testing.T) {
+	server := NewServer(&ServerOpts{
+		Serializer: Protobuf,
+	})
+	wg := &sync.WaitGroup{}
+	server.OnConnect(func(ctx *Context) {
+		ctx.SendMessage(1, &TestUser{Id: 123})
+	})
+	err := server.Listen("127.0.0.1:15555")
+	assert.Nil(t, err)
+	wg.Add(1)
+	c1 := makeClient(t)
+	c1.OnMessage(1, func(ctx *Context, user *TestUser) {
+		assert.Equal(t, 123, user.Id)
+		wg.Done()
+	})
+	wg.Add(1)
+	c2 := makeClient(t)
+	c2.OnMessage(1, func(ctx *Context, user *TestUser) {
+		assert.Equal(t, 123, user.Id)
+		wg.Done()
+	})
+	wg.Wait()
+	server.Close()
+}
+
+func TestServerHandlePacket(t *testing.T) {
+	server := NewServer(&ServerOpts{
+		Serializer: Protobuf,
+	})
+	wg := &sync.WaitGroup{}
+	server.OnMessage(1, func(ctx *Context, u *TestUser) {
+		assert.Equal(t, u.Id, 123)
+		wg.Done()
+	})
+	err := server.Listen("127.0.0.1:15555")
+	assert.Nil(t, err)
+	wg.Add(1)
+	client := makeClient(t)
+	client.SendMessage(1, &TestUser{Id: 123})
+	wg.Wait()
+	server.Close()
+}
+
+/*
 func TestServer(t *testing.T) {
 	server := NewServer(&ServerOpts{
 		Serializer: Protobuf,
@@ -65,3 +115,4 @@ func testClient(t *testing.T, wg *sync.WaitGroup, i int) {
 		wg.Done()
 	})
 }
+*/

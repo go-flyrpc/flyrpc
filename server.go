@@ -31,9 +31,6 @@ type transport struct {
 }
 
 func NewServer(opts *ServerOpts) *Server {
-	if opts == nil {
-		opts = &ServerOpts{}
-	}
 	if opts.Serializer == nil {
 		opts.Serializer = JSON
 	}
@@ -90,16 +87,24 @@ func (s *Server) Listen(addr string) error {
 		return err
 	}
 	s.listener = listener
-	// go s.handleConnections()
+	go s.handleConnections()
 	return nil
 }
 
-func (s *Server) HandleConnections() {
+func (s *Server) Close() error {
+	for _, t := range s.transports {
+		t.Close()
+	}
+	err := s.listener.Close()
+	return err
+}
+
+func (s *Server) handleConnections() {
 	for {
-		log.Println(s.listener)
 		conn, err := s.listener.Accept()
 		if err != nil {
-			log.Fatal("Accept error", err)
+			log.Println("Accept error", err)
+			break
 		} else {
 			log.Println("New Connection", conn.RemoteAddr())
 		}
@@ -176,10 +181,10 @@ func (t *transport) removeClient(clientId int) *Context {
 }
 
 func (t *transport) Close() error {
-	t.clientIds = nil
 	// remove all clients
 	for id := range t.clientIds {
-		delete(t.server.contextMap, id)
+		t.removeClient(id)
 	}
-	return nil
+	t.clientIds = nil
+	return t.protocol.Close()
 }

@@ -1,6 +1,9 @@
 package fly
 
-import "log"
+import (
+	"log"
+	"time"
+)
 
 type Context struct {
 	Protocol Protocol
@@ -11,7 +14,9 @@ type Context struct {
 	// private
 	serializer Serializer
 	nextSeq    TSeq
-	replyChans map[int]chan<- []byte
+	pingSeq    TSeq
+	replyChans map[int]chan []byte
+	pingChans  map[TSeq]chan []byte
 }
 
 func NewContext(protocol Protocol, router Router, clientId int, serializer Serializer) *Context {
@@ -20,7 +25,8 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 		Router:     router,
 		ClientId:   clientId,
 		serializer: serializer,
-		replyChans: make(map[int]chan<- []byte),
+		replyChans: make(map[int]chan []byte),
+		pingChans:  make(map[TSeq]chan []byte),
 	}
 }
 
@@ -56,8 +62,9 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 		return err
 	}
 	header := &Header{
-		Cmd: cmd,
-		Seq: ctx.getNextSeq(),
+		Flag: TypeRPC,
+		Cmd:  cmd,
+		Seq:  ctx.getNextSeq(),
 	}
 	if reply == nil {
 		panic("reply message can't be nil")
@@ -77,7 +84,37 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	return ctx.serializer.Unmarshal(rBuff, reply)
 }
 
+func (ctx *Context) Ping(length TLength, timeout time.Duration) error {
+	ctx.pingSeq++
+	seq := ctx.pingSeq
+	err := ctx.Protocol.Ping(seq, length)
+	if err != nil {
+		return err
+	}
+	pingChan := make(chan []byte, 1)
+	ctx.pingChans[seq] = pingChan
+	defer delete(ctx.pingChans, seq)
+	select {
+	case <-pingChan:
+	case <-time.After(timeout):
+		return NewFlyError(ErrTimeOut)
+	}
+	return nil
+}
+
 func (ctx *Context) emitPacket(pkt *Packet) {
+	subType := pkt.Header.Flag & FlagBitsType
+	switch subType {
+	case TypeRPC:
+		ctx.emitRPCPacket(pkt)
+	case TypePing:
+		ctx.emitPingPacket(pkt)
+	default:
+		log.Println("Unsupported subType", subType)
+	}
+}
+
+func (ctx *Context) emitRPCPacket(pkt *Packet) {
 	if pkt.Header.Flag&RPCFlagResp != 0 {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
@@ -92,6 +129,14 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 	log.Println(ctx.ClientId, "OnMessage", pkt.Header.Cmd)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
 		log.Println(ctx.ClientId, "Error to call packet", err)
+	}
+}
+
+func (ctx *Context) emitPingPacket(pkt *Packet) {
+	if pkt.Header.Flag&PingFlagPing != 0 {
+		ctx.Protocol.Pong(pkt)
+	} else if pkt.Header.Flag&PingFlagPong != 0 {
+		ctx.pingChans[pkt.Header.Seq] <- pkt.MsgBuff
 	}
 }
 

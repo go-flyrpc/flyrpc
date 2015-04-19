@@ -10,6 +10,9 @@ package fly
 import "strconv"
 
 const (
+	// Common error
+	ErrTimeOut int = 1000
+
 	// 10000 - 20000 client error
 
 	ErrNotFound       int = 10000
@@ -25,6 +28,7 @@ const (
 )
 
 var messages = map[int]string{
+	ErrTimeOut:         "TIMEOUT",
 	ErrNotFound:        "NOT_FOUND",
 	ErrBuffTooLong:     "BUFF_TOO_LONG",
 	ErrNoWriter:        "NO_WRITER",

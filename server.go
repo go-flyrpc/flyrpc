@@ -113,7 +113,7 @@ func (s *Server) handleConnections() {
 }
 
 func newTransport(conn net.Conn, server *Server) *transport {
-	protocol := NewProtocol(conn, server.IsMultiplex())
+	protocol := NewTcpProtocol(conn, server.IsMultiplex())
 	transport := &transport{
 		protocol: protocol,
 		server:   server,

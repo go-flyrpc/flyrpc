@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/flyrpc/flyrpc/badge.svg?branch=master)](https://coveralls.io/r/flyrpc/flyrpc?branch=master)
 
 
-FlyRPC是适合高频率的通信框架。
+FlyRPC是适合高频率通信的网络框架。
 
 # 协议
 
@@ -79,6 +79,8 @@ func(*Context, in Message)
 
 #### Context.Call(cmd, Message) (Message, error)
 
+#### Context.Ping(length, timeout) error
+
 #### Client.Connect(addr)
 
 #### Client.OnMessage(cmd, MessageHandler)
@@ -87,9 +89,7 @@ func(*Context, in Message)
 
 #### Client.Call(cmd, Message) (Message, error)
 
-#### Client.Ping(cmd, size)
-
-#### Client.OnPong(cmd, pongSize)
+#### Client.Ping(length, timeout) error
 
 ## 待定
 ```

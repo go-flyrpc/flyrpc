@@ -17,7 +17,7 @@ type Client struct {
 
 // Create new Client instance.
 func NewClient(conn net.Conn, serializer Serializer) *Client {
-	protocol := NewProtocol(conn, false)
+	protocol := NewTcpProtocol(conn, false)
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 99, serializer)
 	cli := &Client{

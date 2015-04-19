@@ -3,6 +3,7 @@ package fly
 import (
 	"log"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -48,4 +49,28 @@ func TestContextCall(t *testing.T) {
 	err := context.Call(1, reply, &TestUser{Id: 123})
 	assert.Nil(t, err)
 	assert.Equal(t, 124, reply.Id)
+}
+
+func TestTimeout(t *testing.T) {
+	protocol := NewMockDeadProtocol()
+	serializer := Protobuf
+	router := NewRouter(serializer)
+	context := NewContext(protocol, router, 0, serializer)
+	context.timeout = 10 * time.Millisecond
+	router.AddRoute(1, func(ctx *Context, in *TestUser) *TestUser {
+		return &TestUser{Id: in.Id + 1}
+	})
+	var reply = new(TestUser)
+	go func() {
+		for {
+			pkt, err := protocol.ReadPacket()
+			context.emitPacket(pkt)
+			if err != nil {
+				break
+			}
+		}
+	}()
+	err := context.Call(1, reply, &TestUser{Id: 123})
+	assert.Error(t, err)
+	assert.Equal(t, ErrTimeOut, err.(*flyError).Code)
 }

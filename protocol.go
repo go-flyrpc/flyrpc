@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"reflect"
 )
 
 // TypeBits - bits of sub protocol
@@ -68,6 +69,9 @@ type protocol struct {
 }
 
 func NewProtocol(conn net.Conn, isMultiplex bool) Protocol {
+	if conn == nil || reflect.ValueOf(conn).IsNil() {
+		panic("conn should not be nil")
+	}
 	protocol := newProtocol(conn, conn, isMultiplex)
 	protocol.Conn = conn
 	return protocol
@@ -83,7 +87,7 @@ func newProtocol(reader io.Reader, writer io.Writer, isMultiplex bool) *protocol
 }
 
 func (p *protocol) Close() error {
-	if p.Conn != nil {
+	if p.Conn != nil || !reflect.ValueOf(p.Conn).IsNil() {
 		return p.Conn.Close()
 	}
 	return nil

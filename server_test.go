@@ -4,14 +4,19 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func makeClient(t *testing.T) *Client {
 	conn, err := net.Dial("tcp", "127.0.0.1:15555")
-	assert.Nil(t, err)
-	return NewClient(conn, Protobuf)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+	if conn != nil {
+		return NewClient(conn, Protobuf)
+	}
+	return nil
 }
 
 func TestServerMultiConnect(t *testing.T) {
@@ -22,16 +27,21 @@ func TestServerMultiConnect(t *testing.T) {
 	server.OnConnect(func(ctx *Context) {
 		ctx.SendMessage(1, &TestUser{Id: 123})
 	})
-	err := server.Listen("127.0.0.1:15555")
-	assert.Nil(t, err)
+	go func() {
+		err := server.Listen("127.0.0.1:15555")
+		assert.Nil(t, err)
+	}()
+	<-time.After(10 * time.Millisecond)
 	wg.Add(1)
 	c1 := makeClient(t)
+	assert.NotNil(t, c1)
 	c1.OnMessage(1, func(ctx *Context, user *TestUser) {
 		assert.Equal(t, 123, user.Id)
 		wg.Done()
 	})
 	wg.Add(1)
 	c2 := makeClient(t)
+	assert.NotNil(t, c2)
 	c2.OnMessage(1, func(ctx *Context, user *TestUser) {
 		assert.Equal(t, 123, user.Id)
 		wg.Done()
@@ -49,8 +59,11 @@ func TestServerHandlePacket(t *testing.T) {
 		assert.Equal(t, u.Id, 123)
 		wg.Done()
 	})
-	err := server.Listen("127.0.0.1:15555")
-	assert.Nil(t, err)
+	go func() {
+		err := server.Listen("127.0.0.1:15555")
+		assert.Nil(t, err)
+	}()
+	<-time.After(10 * time.Millisecond)
 	wg.Add(1)
 	client := makeClient(t)
 	client.SendMessage(1, &TestUser{Id: 123})

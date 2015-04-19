@@ -87,7 +87,7 @@ func (s *Server) Listen(addr string) error {
 		return err
 	}
 	s.listener = listener
-	go s.handleConnections()
+	s.handleConnections()
 	return nil
 }
 

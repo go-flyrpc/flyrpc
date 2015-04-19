@@ -2,6 +2,37 @@
 [![Build Status](https://travis-ci.org/flyrpc/flyrpc.svg?branch=master)](https://travis-ci.org/flyrpc/flyrpc)
 [![Coverage Status](https://coveralls.io/repos/flyrpc/flyrpc/badge.svg?branch=master)](https://coveralls.io/r/flyrpc/flyrpc?branch=master)
 
+
+FlyRPC是适合高频率的通信框架。
+
+# 协议
+
+## 消息协议
+
+| Flag   | Command   | Sequence  | Buffer Length | Buffer |
+| ------ |:---------:| ---------:|:-------------:| ------ |
+| 1 byte | 2 byte    | 2 byte    | 2 byte        | n byte |
+| 标志位 | 命令ID    | 序列ID    | 消息长度      | 消息体 |
+
+### Flag说明
+
+| 子协议 | 控制位 |
+| -----: | ------ |
+| 2 bit  | 6 bit  |
+
+| 子协议 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| ------ |---|---|---|---|---|---|---|---|
+| RPC    | 1 | 1 | ? | ? | ? | Buffer | Error | Resp |
+| Ping   | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
+| Helo   | 0 | 1 | ? | ? | ? | ? | ? | ? |
+| MQ     | 0 | 0 | ? | ? | ? | ? | ? | ? |
+
+## 服务器内部多路复用协议
+
+| Client count  | Client Id 1   | ...  | Client Id n | Buffer Length | Buffer |
+| ------------- |:-------------:| ----:|:-----------:| ------------- | ------ |
+| 1 byte        | 2 byte        | ...  | 2 byte      | 2byte         | n byte |
+
 # 草案
 ## 模式
 * [OK]Send/Recv
@@ -97,20 +128,3 @@ TCP/UDP/WS            TCP/UDP/WS               TCP/UDP/WS
 * _\*_ 多实例
 * _-->_ 继承或实现
 * _\+_  被引用
-
-# 协议
-## 分包协议
-2byte
-length|buff
-
-## TODO 多路复用协议
-byte    | n byte    | 2 byte | nbyte
-idcount | clientIds | length | buff
-
-NOTICE:
-线程安全，防止两个客户端连接写同步
-
-## 消息协议
-
-byte | 2byte | byte | nbyte
-flag | cmd   | seq  | serialized-buff

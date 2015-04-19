@@ -27,3 +27,15 @@ func (mp *MockProtocol) ReadPacket() (*Packet, error) {
 func (mp *MockProtocol) Close() error {
 	return nil
 }
+
+type MockDeadProtocol struct {
+	*MockProtocol
+}
+
+func NewMockDeadProtocol() *MockDeadProtocol {
+	return &MockDeadProtocol{NewMockProtocol()}
+}
+
+func (p *MockDeadProtocol) SendPacket(pkt *Packet) error {
+	return nil
+}

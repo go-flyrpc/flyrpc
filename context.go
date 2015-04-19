@@ -17,6 +17,7 @@ type Context struct {
 	pingSeq    TSeq
 	replyChans map[int]chan []byte
 	pingChans  map[TSeq]chan []byte
+	timeout    time.Duration
 }
 
 func NewContext(protocol Protocol, router Router, clientId int, serializer Serializer) *Context {
@@ -27,6 +28,7 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 		serializer: serializer,
 		replyChans: make(map[int]chan []byte),
 		pingChans:  make(map[TSeq]chan []byte),
+		timeout:    10 * time.Second,
 	}
 }
 
@@ -69,19 +71,26 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	if reply == nil {
 		panic("reply message can't be nil")
 	}
+
+	// Send Packet
+	if err := ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff}); err != nil {
+		return err
+	}
+
 	// init channel before send packet
 	replyChan := make(chan []byte, 1)
 	// set replyChan for cmd | seq
 	chanId := ctx.getChanId(header)
 	ctx.replyChans[chanId] = replyChan
-	log.Println(ctx.ClientId, "make chan", chanId, ctx.replyChans)
+
+	// make sure that replyChan is released
 	defer delete(ctx.replyChans, chanId)
-	if err := ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff}); err != nil {
-		return err
+	select {
+	case rBuff := <-replyChan:
+		return ctx.serializer.Unmarshal(rBuff, reply)
+	case <-time.After(ctx.timeout):
+		return NewFlyError(ErrTimeOut)
 	}
-	// wait to get response
-	rBuff := <-replyChan
-	return ctx.serializer.Unmarshal(rBuff, reply)
 }
 
 func (ctx *Context) Ping(length TLength, timeout time.Duration) error {

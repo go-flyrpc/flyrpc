@@ -79,8 +79,24 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	return p.Writer.Flush()
 }
 
-func (p *TcpProtocol) SendPingPacket() {
+func (p *TcpProtocol) Ping(seq TSeq, length TLength) error {
+	return p.sendPing(PingFlagPing, seq, make([]byte, length))
+}
 
+func (p *TcpProtocol) Pong(pkt *Packet) error {
+	return p.sendPing(PingFlagPong, pkt.Header.Seq, pkt.MsgBuff)
+}
+
+func (p *TcpProtocol) sendPing(pingFlag byte, seq TSeq, bytes []byte) error {
+	return p.SendPacket(&Packet{
+		Header: &Header{
+			Flag: TypePing | pingFlag,
+			Cmd:  0,
+			Seq:  seq,
+		},
+		Length:  TLength(len(bytes)),
+		MsgBuff: bytes,
+	})
 }
 
 func (p *TcpProtocol) ReadPacket() (*Packet, error) {
@@ -99,23 +115,12 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	subType := header.Flag & FlagBitsType
-	if subType == TypePing {
-		return p.readPingPacket(header, clientId)
-	}
-	if subType == TypeHello {
-		return p.readHelloPacket(header, clientId)
-	}
-	if subType == TypeRPC {
-		return p.readRPCPacket(header, clientId)
-	}
-	return nil, NewFlyError(ErrUnknownSubType)
-}
 
-func (p *TcpProtocol) readRPCPacket(header *Header, clientId int) (*Packet, error) {
+	subType := header.Flag & FlagBitsType
+
 	// read length
 	var length TLength
-	err := binary.Read(p.Reader, binary.BigEndian, &length)
+	err = binary.Read(p.Reader, binary.BigEndian, &length)
 	if err != nil {
 		return nil, err
 	}
@@ -127,32 +132,10 @@ func (p *TcpProtocol) readRPCPacket(header *Header, clientId int) (*Packet, erro
 	// log.Println("return packet", buf)
 	packet := &Packet{
 		ClientId: clientId,
-		SubType:  TypeRPC,
+		SubType:  subType,
 		Length:   length,
 		Header:   header,
 		MsgBuff:  buf,
 	}
 	return packet, nil
-}
-
-func (p *TcpProtocol) readPingPacket(header *Header, clientId int) (*Packet, error) {
-	// TODO support sized ping packet
-	return &Packet{
-		ClientId: clientId,
-		SubType:  TypePing,
-		Length:   0,
-		Header:   header,
-		MsgBuff:  nil,
-	}, nil
-}
-
-func (p *TcpProtocol) readHelloPacket(header *Header, clientId int) (*Packet, error) {
-	// TODO Well design hello protocol
-	return &Packet{
-		ClientId: clientId,
-		SubType:  TypeHello,
-		Length:   0,
-		Header:   header,
-		MsgBuff:  nil,
-	}, nil
 }

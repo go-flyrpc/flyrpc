@@ -46,7 +46,7 @@ func (ctx *Context) SendMessage(cmd TCmd, message Message) error {
 	if err != nil {
 		return err
 	}
-	return ctx.SendPacket(0, cmd, ctx.getNextSeq(), buff)
+	return ctx.SendPacket(TypeRPC, cmd, ctx.getNextSeq(), buff)
 }
 
 func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {

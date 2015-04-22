@@ -79,26 +79,6 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	return p.Writer.Flush()
 }
 
-func (p *TcpProtocol) Ping(seq TSeq, length TLength) error {
-	return p.sendPing(PingFlagPing, seq, make([]byte, length))
-}
-
-func (p *TcpProtocol) Pong(pkt *Packet) error {
-	return p.sendPing(PingFlagPong, pkt.Header.Seq, pkt.MsgBuff)
-}
-
-func (p *TcpProtocol) sendPing(pingFlag byte, seq TSeq, bytes []byte) error {
-	return p.SendPacket(&Packet{
-		Header: &Header{
-			Flag: TypePing | pingFlag,
-			Cmd:  0,
-			Seq:  seq,
-		},
-		Length:  TLength(len(bytes)),
-		MsgBuff: bytes,
-	})
-}
-
 func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	// FIXME length, header position wrong.
 	var clientId = 0

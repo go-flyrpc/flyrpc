@@ -49,7 +49,5 @@ type Packet struct {
 type Protocol interface {
 	ReadPacket() (*Packet, error)
 	SendPacket(*Packet) error
-	Ping(seq TSeq, length TLength) error
-	Pong(*Packet) error
 	Close() error
 }

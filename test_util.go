@@ -5,15 +5,21 @@ import "time"
 type MockProtocol struct {
 	*TcpProtocol
 	packetChan chan *Packet
+	delay      time.Duration
 }
 
 func NewMockProtocol() *MockProtocol {
-	return &MockProtocol{nil, make(chan *Packet, 10)}
+	return &MockProtocol{nil, make(chan *Packet, 10), time.Millisecond}
+	return NewMockDelayProtocol(time.Millisecond)
+}
+
+func NewMockDelayProtocol(delay time.Duration) *MockProtocol {
+	return &MockProtocol{nil, make(chan *Packet, 10), delay}
 }
 
 func (mp *MockProtocol) SendPacket(pkt *Packet) error {
 	go func() {
-		time.After(time.Millisecond)
+		<-time.After(mp.delay)
 		mp.packetChan <- pkt
 	}()
 	return nil
@@ -25,17 +31,5 @@ func (mp *MockProtocol) ReadPacket() (*Packet, error) {
 }
 
 func (mp *MockProtocol) Close() error {
-	return nil
-}
-
-type MockDeadProtocol struct {
-	*MockProtocol
-}
-
-func NewMockDeadProtocol() *MockDeadProtocol {
-	return &MockDeadProtocol{NewMockProtocol()}
-}
-
-func (p *MockDeadProtocol) SendPacket(pkt *Packet) error {
 	return nil
 }

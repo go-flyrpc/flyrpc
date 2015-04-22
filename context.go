@@ -93,10 +93,30 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	}
 }
 
+func (ctx *Context) sendPingPacket(pingFlag byte, seq TSeq, bytes []byte) error {
+	return ctx.Protocol.SendPacket(&Packet{
+		Header: &Header{
+			Flag: TypePing | pingFlag,
+			Cmd:  0,
+			Seq:  seq,
+		},
+		Length:  TLength(len(bytes)),
+		MsgBuff: bytes,
+	})
+}
+
+func (ctx *Context) sendPing(seq TSeq, length TLength) error {
+	return ctx.sendPingPacket(PingFlagPing, seq, make([]byte, length))
+}
+
+func (ctx *Context) sendPong(pkt *Packet) error {
+	return ctx.sendPingPacket(PingFlagPong, pkt.Header.Seq, pkt.MsgBuff)
+}
+
 func (ctx *Context) Ping(length TLength, timeout time.Duration) error {
 	ctx.pingSeq++
 	seq := ctx.pingSeq
-	err := ctx.Protocol.Ping(seq, length)
+	err := ctx.sendPing(seq, length)
 	if err != nil {
 		return err
 	}
@@ -143,8 +163,10 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 
 func (ctx *Context) emitPingPacket(pkt *Packet) {
 	if pkt.Header.Flag&PingFlagPing != 0 {
-		ctx.Protocol.Pong(pkt)
+		log.Println(ctx.ClientId, "sendPong", pkt)
+		ctx.sendPong(pkt)
 	} else if pkt.Header.Flag&PingFlagPong != 0 {
+		log.Println(ctx.ClientId, "recvPong", pkt)
 		ctx.pingChans[pkt.Header.Seq] <- pkt.MsgBuff
 	}
 }

@@ -1,4 +1,4 @@
-package fly
+package flyrpc
 
 // TypeBits - bits of sub protocol
 // TypeRPC  - type of RPC. Main feature

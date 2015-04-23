@@ -5,7 +5,7 @@ It support JSON, Msgpack, Protobuf serializer.
 
 It support Call/Response  or Send/Receive pattern.
 */
-package fly
+package flyrpc
 
 import "strconv"
 

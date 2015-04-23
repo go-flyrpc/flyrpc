@@ -31,10 +31,9 @@ type route struct {
 	vHandler    reflect.Value
 	numIn       int
 	numOut      int
-	in          []reflect.Type
-	out         []reflect.Type
+	inTypes     []reflect.Type
+	outTypes    []reflect.Type
 	outErrIndex int
-	inType      reflect.Type
 	outType     reflect.Type
 }
 
@@ -42,6 +41,8 @@ var (
 	_err        error
 	typeError   = reflect.TypeOf(&_err).Elem()
 	typeContext = reflect.TypeOf(&Context{})
+	typeBytes   = reflect.TypeOf([]byte{})
+	typePacket  = reflect.TypeOf(&Packet{})
 )
 
 func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
@@ -62,71 +63,73 @@ func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
 	numOut := r.vHandler.Type().NumOut()
 	r.numIn = numIn
 	r.numOut = numOut
-	r.in = make([]reflect.Type, numIn)
-	r.out = make([]reflect.Type, numOut)
+	r.inTypes = make([]reflect.Type, numIn)
+	r.outTypes = make([]reflect.Type, numOut)
 	for i := 0; i < numIn; i++ {
-		r.in[i] = r.vHandler.Type().In(i)
+		r.inTypes[i] = r.vHandler.Type().In(i)
 	}
 	for i := 0; i < numOut; i++ {
-		r.out[i] = r.vHandler.Type().Out(i)
+		r.outTypes[i] = r.vHandler.Type().Out(i)
 	}
-	if numIn > 2 {
-		panic("Handler arguments must be ([*Context], [Message])")
-	}
-	if numIn != 2 {
-		panic("Handler must be func(*Context, Message)")
-	}
-	if r.in[0] != typeContext {
-		panic("handler first parameter must be *Context")
-	}
-	r.inType = r.in[1]
 	if numOut > 2 {
 		panic("Too much returns, handler must return (Message, error) or error")
 	}
 	if numOut == 2 {
-		if !r.out[1].AssignableTo(typeError) {
+		if !r.outTypes[1].AssignableTo(typeError) {
 			panic("Handler should return (Message, error)")
 		}
 	}
 	if numOut > 0 {
-		if r.out[numOut-1].AssignableTo(typeError) {
+		if r.outTypes[numOut-1].AssignableTo(typeError) {
 			r.outErrIndex = numOut - 1
 		}
-		if !r.out[0].AssignableTo(typeError) {
-			r.outType = r.out[0]
+		if !r.outTypes[0].AssignableTo(typeError) {
+			r.outType = r.outTypes[0]
 		}
 	}
 	return r
 }
 
 func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
-	v := reflect.New(route.inType.Elem())
-	err := route.serializer.Unmarshal(pkt.MsgBuff, v.Interface())
-	if err != nil {
-		return err
+	values := make([]reflect.Value, route.numIn)
+	for i := 0; i < route.numIn; i++ {
+		inType := route.inTypes[i]
+		if inType == typeContext {
+			values[i] = reflect.ValueOf(ctx)
+		} else if inType == typeBytes {
+			values[i] = reflect.ValueOf(pkt.MsgBuff)
+		} else if inType == typePacket {
+			values[i] = reflect.ValueOf(pkt)
+		} else {
+			v := reflect.New(inType.Elem())
+			err := route.serializer.Unmarshal(pkt.MsgBuff, v.Interface())
+			if err != nil {
+				return err
+			}
+			values[i] = v
+		}
 	}
-	ret := route.vHandler.Call([]reflect.Value{reflect.ValueOf(ctx), v})
+	ret := route.vHandler.Call(values)
 	// retSize := len(ret)
 	// if retSize != route.numOut {
 	// 	panic("Error result size")
 	// }
-	// var err error
 	if route.outErrIndex >= 0 {
 		ve := ret[route.outErrIndex]
 		if !ve.IsNil() {
-			err = ve.Interface().(error)
+			err := ve.Interface().(error)
+			if err != nil {
+				flyErr, ok := err.(*flyError)
+				if ok && flyErr.Code < 20000 {
+					// client error
+					return ctx.SendError(flyErr)
+				}
+				return err
+			}
 		}
 	}
 	if route.outType != nil {
 		// rpc return
-		if err != nil {
-			flyErr, ok := err.(*flyError)
-			if ok && flyErr.Code < 20000 {
-				// client error
-				return ctx.SendError(flyErr)
-			}
-			return err
-		}
 		vout := ret[0]
 		bytes, err := route.serializer.Marshal(vout.Interface())
 		if err != nil {
@@ -138,7 +141,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			pkt.Header.Seq,
 			bytes)
 	}
-	return err
+	return nil
 }
 
 type router struct {

@@ -20,7 +20,7 @@ func TestRouter(t *testing.T) {
 	protocol := NewMockProtocol()
 	ctx := NewContext(protocol, r, 0, s)
 
-	r.AddRoute(1, func(ctx *Context, u *TestUser) {
+	r.AddRoute(1, func(u *TestUser) {
 		p1 = u
 	})
 	err = r.emitPacket(ctx, &Packet{
@@ -33,7 +33,8 @@ func TestRouter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 123, p1.Id)
 
-	r.AddRoute(2, func(ctx *Context, u *TestUser) error {
+	r.AddRoute(2, func(pkt *Packet, u *TestUser) error {
+		assert.Equal(t, pkt.Header.Cmd, TCmd(2))
 		p2 = u
 		return errors.New("e1")
 	})
@@ -63,7 +64,10 @@ func TestRouter(t *testing.T) {
 	assert.Equal(t, 123, p3.Id)
 	// assert.True(t, len(outbuff.Bytes()) > 0)
 
-	r.AddRoute(4, func(ctx *Context, u *TestUser) (*TestUser, error) {
+	r.AddRoute(4, func(bytes []byte, u *TestUser) (*TestUser, error) {
+		u2 := &TestUser{}
+		s.Unmarshal(bytes, u2)
+		assert.Equal(t, u.Id, u2.Id)
 		p4 = u
 		return &TestUser{Id: 789}, nil
 	})

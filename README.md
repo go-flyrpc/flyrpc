@@ -59,16 +59,27 @@ FlyRPC是适合高频率通信的网络框架。
 ## API
 
 #### type MessageHandler
-MessageHandler 可以有以下几种形式
+MessageHandler 可以有以下几种形式的参数的组合或无参数
+* \*Context
+* \*Packet 
+* \[]byte
+* \*UserCustomMessage
+
+返回可以是：
+* UserCustomMessage
+* UserCustomMessage, error
+* non return
+* error
+
 
 ```go
 // 有返回值，用于处理Call
-func(*Context, in Message) (out Message, err error)
-func(*Context, in Message) out Message
+func(*Context, in MyMessage) (out Message, err error)
+func(*Packet, in MyMessage) out Message
 
 // 无返回值，用于处理SendMessage
-func(*Context, in Message) err error
-func(*Context, in Message)
+func(bytes []byte) err error
+func()
 ```
 
 #### Server.Listen(addr)

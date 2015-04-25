@@ -64,7 +64,7 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 		return err
 	}
 	header := &Header{
-		Flag: TypeRPC,
+		Flag: TypeRPC | RPCFlagReq,
 		Cmd:  cmd,
 		Seq:  ctx.getNextSeq(),
 	}

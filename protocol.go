@@ -13,9 +13,11 @@ const (
 )
 
 const (
-	RPCFlagResp   byte = 0x01
-	RPCFlagError  byte = 0x02
-	RPCFlagBuffer byte = 0x04
+	// REQ 有此标志必须返回, 无此标志也无 Resp标志的是纯消息
+	RPCFlagReq    byte = 0x01
+	RPCFlagResp   byte = 0x02
+	RPCFlagError  byte = 0x04
+	RPCFlagBuffer byte = 0x08
 	PingFlagPing  byte = 0x01
 	PingFlagPong  byte = 0x02
 	// LFLAG_NOTIFY byte = 0x10

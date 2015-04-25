@@ -56,6 +56,28 @@ func TestContextCall(t *testing.T) {
 	assert.Equal(t, ErrTimeOut, err.(*flyError).Code)
 }
 
+func TestCallAck(t *testing.T) {
+	protocol := NewMockDelayProtocol(time.Millisecond)
+	serializer := Protobuf
+	router := NewRouter(serializer)
+	context := NewContext(protocol, router, 0, serializer)
+	router.AddRoute(1, func(ctx *Context, in *TestUser) {
+	})
+	var reply = new(TestUser)
+	go func() {
+		for {
+			pkt, err := protocol.ReadPacket()
+			context.emitPacket(pkt)
+			if err != nil {
+				break
+			}
+		}
+	}()
+	context.timeout = 200 * time.Millisecond
+	err := context.Call(1, reply, &TestUser{Id: 123})
+	assert.NoError(t, err)
+}
+
 func TestCallTimeout(t *testing.T) {
 	protocol := NewMockDelayProtocol(time.Second)
 	serializer := Protobuf

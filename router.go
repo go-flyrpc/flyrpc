@@ -128,6 +128,10 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			}
 		}
 	}
+	if pkt.Header.Flag&RPCFlagReq == 0 {
+		// not a call, no response
+		return nil
+	}
 	if route.outType != nil {
 		// rpc return
 		vout := ret[0]
@@ -141,6 +145,13 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			pkt.Header.Seq,
 			bytes)
 	}
+	// just return an empty ack message
+	return ctx.SendPacket(
+		TypeRPC|RPCFlagResp,
+		pkt.Header.Cmd,
+		pkt.Header.Seq,
+		[]byte{},
+	)
 	return nil
 }
 

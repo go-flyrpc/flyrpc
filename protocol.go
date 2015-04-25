@@ -29,6 +29,7 @@ type TSeq uint8
 type TLength uint16
 
 const MaxLength = ^TLength(0)
+const MaxCommand = ^TCmd(0)
 
 type Header struct {
 	Flag byte

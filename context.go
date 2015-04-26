@@ -8,7 +8,7 @@ import (
 type Context struct {
 	Protocol Protocol
 	ClientId int
-	Data     map[string]interface{}
+	Session  interface{}
 	Packet   *Packet
 	Router   Router
 	// private

@@ -68,9 +68,6 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 		Cmd:  cmd,
 		Seq:  ctx.getNextSeq(),
 	}
-	if reply == nil {
-		panic("reply message can't be nil")
-	}
 
 	// Send Packet
 	if err := ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff}); err != nil {
@@ -87,7 +84,10 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	defer delete(ctx.replyChans, chanId)
 	select {
 	case rBuff := <-replyChan:
-		return ctx.serializer.Unmarshal(rBuff, reply)
+		if reply != nil {
+			return ctx.serializer.Unmarshal(rBuff, reply)
+		}
+		return nil
 	case <-time.After(ctx.timeout):
 		return NewFlyError(ErrTimeOut)
 	}

@@ -63,7 +63,6 @@ func TestCallAck(t *testing.T) {
 	context := NewContext(protocol, router, 0, serializer)
 	router.AddRoute(1, func(ctx *Context, in *TestUser) {
 	})
-	var reply = new(TestUser)
 	go func() {
 		for {
 			pkt, err := protocol.ReadPacket()
@@ -74,7 +73,7 @@ func TestCallAck(t *testing.T) {
 		}
 	}()
 	context.timeout = 200 * time.Millisecond
-	err := context.Call(1, reply, &TestUser{Id: 123})
+	err := context.Call(1, nil, &TestUser{Id: 123})
 	assert.NoError(t, err)
 }
 

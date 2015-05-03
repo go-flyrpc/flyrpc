@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
-	"log"
 	"net"
 	"reflect"
 )
@@ -43,7 +42,7 @@ func (p *TcpProtocol) Close() error {
 
 func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	// FIXME length, header position wrong.
-	log.Println("Sending:", pk.ClientId, pk.Header, pk.MsgBuff)
+	// log.Println("Sending:", pk.ClientId, pk.Header, pk.MsgBuff)
 	if p.Writer == nil {
 		err := p.Close()
 		return NewFlyError(ErrWriterClosed, err)
@@ -64,16 +63,16 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	if pk.Length > MaxLength {
 		return NewFlyError(ErrBuffTooLong, nil)
 	}
-	log.Println("Write header", pk.Header)
+	// log.Println("Write header", pk.Header)
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Header); err != nil {
 		return err
 	}
-	log.Println("Write Length:", pk.Length)
+	// log.Println("Write Length:", pk.Length)
 
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Length); err != nil {
 		return err
 	}
-	log.Println("Write Buff:", pk.MsgBuff)
+	// log.Println("Write Buff:", pk.MsgBuff)
 	if _, err := p.Writer.Write(pk.MsgBuff); err != nil {
 		return err
 	}
@@ -93,7 +92,7 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	// read header
 	header := &Header{}
 	err := binary.Read(p.Reader, binary.BigEndian, header)
-	log.Println("Read Header", header)
+	// log.Println("Read Header", header)
 	if err != nil {
 		return nil, err
 	}
@@ -103,13 +102,13 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	// read length
 	var length TLength
 	err = binary.Read(p.Reader, binary.BigEndian, &length)
-	log.Println("Read Length", length)
+	// log.Println("Read Length", length)
 	if err != nil {
 		return nil, err
 	}
 	buf := make([]byte, length)
 	_, err = io.ReadFull(p.Reader, buf)
-	log.Println("Read buff", buf)
+	// log.Println("Read buff", buf)
 	if err != nil {
 		return nil, err
 	}

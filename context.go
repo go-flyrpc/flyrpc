@@ -163,10 +163,10 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 
 func (ctx *Context) emitPingPacket(pkt *Packet) {
 	if pkt.Header.Flag&PingFlagPing != 0 {
-		log.Println(ctx.ClientId, "sendPong", pkt)
+		log.Println(ctx.ClientId, "sendPong")
 		ctx.sendPong(pkt)
 	} else if pkt.Header.Flag&PingFlagPong != 0 {
-		log.Println(ctx.ClientId, "recvPong", pkt)
+		log.Println(ctx.ClientId, "recvPong")
 		ctx.pingChans[pkt.Header.Seq] <- pkt.MsgBuff
 	}
 }

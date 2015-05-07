@@ -8,8 +8,9 @@ import (
 )
 
 func TestRouter(t *testing.T) {
+	uid := int32(123)
 	s := Protobuf
-	buff, err := s.Marshal(&TestUser{Id: 123, Name: "abc"})
+	buff, err := s.Marshal(&TestUser{Id: uid, Name: "abc"})
 	assert.Nil(t, err)
 	r := NewRouter(s)
 	// c := make(chan *TestUser, 10)
@@ -31,7 +32,7 @@ func TestRouter(t *testing.T) {
 		MsgBuff: buff,
 	})
 	assert.Nil(t, err)
-	assert.Equal(t, 123, p1.Id)
+	assert.Equal(t, uid, p1.Id)
 
 	r.AddRoute(2, func(pkt *Packet, u *TestUser) error {
 		assert.Equal(t, pkt.Header.Cmd, TCmd(2))
@@ -47,7 +48,7 @@ func TestRouter(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 	assert.Equal(t, "e1", err.Error())
-	assert.Equal(t, 123, p2.Id)
+	assert.Equal(t, uid, p2.Id)
 
 	r.AddRoute(3, func(ctx *Context, u *TestUser) *TestUser {
 		p3 = u
@@ -61,7 +62,7 @@ func TestRouter(t *testing.T) {
 		MsgBuff: buff,
 	})
 	assert.Nil(t, err)
-	assert.Equal(t, 123, p3.Id)
+	assert.Equal(t, uid, p3.Id)
 	// assert.True(t, len(outbuff.Bytes()) > 0)
 
 	r.AddRoute(4, func(bytes []byte, u *TestUser) (*TestUser, error) {
@@ -79,7 +80,7 @@ func TestRouter(t *testing.T) {
 		MsgBuff: buff,
 	})
 	assert.Nil(t, err)
-	assert.Equal(t, 123, p4.Id)
+	assert.Equal(t, uid, p4.Id)
 	// assert.True(t, len(outbuff.Bytes()) > 0)
 
 	r.AddRoute(5, func(ctx *Context, u *TestUser) (*TestUser, error) {

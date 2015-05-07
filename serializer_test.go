@@ -27,7 +27,7 @@ func testSerializer(t *testing.T, s Serializer) {
 	u := &TestUser{}
 	err = s.Unmarshal(bytes, u)
 	assert.Nil(t, err)
-	assert.Equal(t, 123, u.Id)
+	assert.Equal(t, int32(123), u.Id)
 	assert.Equal(t, "abc", u.Name)
 }
 
@@ -36,10 +36,11 @@ func TestJSONSerializer(t *testing.T) {
 }
 
 func TestProtoSerializer(t *testing.T) {
+	uid := int32(123)
 	s := Protobuf
-	bytes, err := s.Marshal(&TestNoneProto{Id: 123, Name: "abc"})
+	bytes, err := s.Marshal(&TestNoneProto{Id: uid, Name: "abc"})
 	assert.NotNil(t, err)
-	bytes, err = s.Marshal(&TestUser{Id: 123, Name: "abc"})
+	bytes, err = s.Marshal(&TestUser{Id: uid, Name: "abc"})
 	assert.Nil(t, err)
 	m := &TestNoneProto{}
 	err = s.Unmarshal(bytes, m)
@@ -47,7 +48,7 @@ func TestProtoSerializer(t *testing.T) {
 	u := &TestUser{}
 	err = s.Unmarshal(bytes, u)
 	assert.Nil(t, err)
-	assert.Equal(t, 123, u.Id)
+	assert.Equal(t, uid, u.Id)
 	assert.Equal(t, "abc", u.Name)
 }
 

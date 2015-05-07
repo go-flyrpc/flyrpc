@@ -36,14 +36,14 @@ func TestServerMultiConnect(t *testing.T) {
 	c1 := makeClient(t)
 	assert.NotNil(t, c1)
 	c1.OnMessage(1, func(ctx *Context, user *TestUser) {
-		assert.Equal(t, 123, user.Id)
+		assert.Equal(t, int32(123), user.Id)
 		wg.Done()
 	})
 	wg.Add(1)
 	c2 := makeClient(t)
 	assert.NotNil(t, c2)
 	c2.OnMessage(1, func(ctx *Context, user *TestUser) {
-		assert.Equal(t, 123, user.Id)
+		assert.Equal(t, int32(123), user.Id)
 		wg.Done()
 	})
 	wg.Wait()
@@ -51,12 +51,13 @@ func TestServerMultiConnect(t *testing.T) {
 }
 
 func TestServerHandlePacket(t *testing.T) {
+	uid := int32(123)
 	server := NewServer(&ServerOpts{
 		Serializer: Protobuf,
 	})
 	wg := &sync.WaitGroup{}
 	server.OnMessage(1, func(ctx *Context, u *TestUser) {
-		assert.Equal(t, u.Id, 123)
+		assert.Equal(t, uid, u.Id)
 		wg.Done()
 	})
 	go func() {

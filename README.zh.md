@@ -3,73 +3,84 @@
 [![Coverage Status](https://coveralls.io/repos/flyrpc/flyrpc/badge.svg?branch=master)](https://coveralls.io/r/flyrpc/flyrpc?branch=master)
 
 
-FlyRPC high speed flexible network framework.
+FlyRPC是适合高频率通信的网络框架。
 
-# Protocol
+# 协议
 
-## Message Protocol
+## 消息协议
 
 | Flag   | Command   | Sequence  | Buffer Length | Buffer |
 | ------ |:---------:| ---------:|:-------------:| ------ |
 | 1 byte | 2 byte    | 1 byte    | 2 byte        | n byte |
+| 标志位 | 命令ID    | 序列ID    | 消息长度      | 消息体 |
 
-### Flag Sepc
+### Flag说明
 
-| SubType | Options |
-| ------: | ------- |
-| 2 bit   | 6 bit   |
+| 子协议 | 控制位 |
+| -----: | ------ |
+| 2 bit  | 6 bit  |
 
-| SubType | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
-| ------- |---|---|---|---|---|---|---|---|
-| RPC     | 1 | 1 | ? | ? | ? | Buffer | Error | Resp |
-| Ping    | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
-| Helo    | 0 | 1 | ? | ? | ? | ? | ? | ? |
-| MQ      | 0 | 0 | ? | ? | ? | ? | ? | ? |
+| 子协议 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| ------ |---|---|---|---|---|---|---|---|
+| RPC    | 1 | 1 | ? | ? | ? | Buffer | Error | Resp |
+| Ping   | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
+| Helo   | 0 | 1 | ? | ? | ? | ? | ? | ? |
+| MQ     | 0 | 0 | ? | ? | ? | ? | ? | ? |
 
-## Internal Multiplexed Protocol
+## 服务器内部多路复用协议
 
 | Client count  | Client Id 1   | ...  | Client Id n | Buffer Length | Buffer |
 | ------------- |:-------------:| ----:|:-----------:| ------------- | ------ |
 | 1 byte        | 2 byte        | ...  | 2 byte      | 2byte         | n byte |
 
-# Draft
-## Patterns
+# 草案
+## 模式
 * [OK]Send/Recv
 * [OK]Req/Res
 * Pub/Sub
 
-## Network
+## 网络协议 
 * [OK]TCP
 * UDP
 * Websocket
 * P2P
 
-## Serializer
-* Compress
+## 序列化接口 
+* 数据压缩
+* [OK]自定义
 * [OK]json
 * [OK]protobuf (proto3)
 * [OK]msgpack
 
-## Multiplexing
+## 多路复用
 * Gateway Node
 * Backend Node
 
 ## API
 
 #### type MessageHandler
-MessageHandler could take below params
+MessageHandler 可以有以下几种形式的参数的组合或无参数
 * \*Context
 * \*Packet 
 * \[]byte
 * \*UserCustomMessage
 
-MessageHandler could return below results
-* UserCustomMessage, error
+返回可以是：
 * UserCustomMessage
+* UserCustomMessage, error
+* non return
 * error
-* no return
 
-#### NewServer(*ServerOpts) *Server
+
+```go
+// 有返回值，用于处理Call
+func(*Context, in MyMessage) (out Message, err error)
+func(*Packet, in MyMessage) out Message
+
+// 无返回值，用于处理SendMessage
+func(bytes []byte) err error
+func()
+```
 
 #### Server.Listen(addr)
 
@@ -81,8 +92,6 @@ MessageHandler could return below results
 
 #### Context.Ping(length, timeout) error
 
-#### NewClient(addr) *Client
-
 #### Client.Connect(addr)
 
 #### Client.OnMessage(cmd, MessageHandler)
@@ -93,7 +102,18 @@ MessageHandler could return below results
 
 #### Client.Ping(length, timeout) error
 
-# Class Digrame
+## 待定
+```
+type ClientStub struct {
+    foo func(a) b `flyid:1`
+}
+
+rpc := &ClientStub{}
+client.InjectService(rpc)
+b := rpc.foo(a)
+```
+
+# 类关联结构
 ```
 TCP/UDP/WS        Packet    json/protobuf/msgpack
  |                + + +                   |
@@ -116,6 +136,6 @@ TCP/UDP/WS        Packet    json/protobuf/msgpack
  |                          |                      |
 TCP/UDP/WS            TCP/UDP/WS               TCP/UDP/WS
 ```
-* _\*_ Multiple instance
-* _-->_ Extends
-* _\+_  Reference
+* _\*_ 多实例
+* _-->_ 继承或实现
+* _\+_  被引用

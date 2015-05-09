@@ -13,7 +13,7 @@ FlyRPC high speed flexible network framework.
 | ------ |:---------:| ---------:|:-------------:| ------ |
 | 1 byte | 2 byte    | 1 byte    | 2 byte        | n byte |
 
-### Flag Sepc
+### Flag Spec
 
 | SubType | Options |
 | ------: | ------- |

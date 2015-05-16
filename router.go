@@ -1,6 +1,11 @@
 package flyrpc
 
-import "reflect"
+import (
+	"log"
+	"reflect"
+	"runtime/debug"
+	"strings"
+)
 
 // Message must be explicit type, e.g. *User
 // func(*Context)
@@ -90,6 +95,20 @@ func NewRoute(handlerFunc HandlerFunc, s Serializer) *route {
 	return r
 }
 
+func (route *route) call(values []reflect.Value) (result []reflect.Value, err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			err = NewFlyError(ErrHandlerPanic)
+			lines := strings.Split(string(debug.Stack()), "\n")
+			stack := strings.Join(lines[6:], "\n")
+			log.Println("Handler panic: %s %s", r, stack)
+		}
+	}()
+	result = route.vHandler.Call(values)
+	return
+}
+
 func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	values := make([]reflect.Value, route.numIn)
 	for i := 0; i < route.numIn; i++ {
@@ -109,7 +128,10 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			values[i] = v
 		}
 	}
-	ret := route.vHandler.Call(values)
+	ret, err := route.call(values)
+	if err != nil {
+		return err
+	}
 	// retSize := len(ret)
 	// if retSize != route.numOut {
 	// 	panic("Error result size")

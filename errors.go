@@ -22,6 +22,7 @@ const (
 
 	ErrNoWriter     int = 21000
 	ErrWriterClosed int = 21001
+	ErrHandlerPanic int = 22000
 	// 25000 + serializer error
 
 	ErrNotProtoMessage int = 25010

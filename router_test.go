@@ -107,3 +107,25 @@ func TestRouter(t *testing.T) {
 	assert.Equal(t, ErrNotFound, err.(*flyError).Code)
 	// log.Println(outbuff.Bytes())
 }
+
+func TestRouterPanic(t *testing.T) {
+	s := Protobuf
+	buff, err := s.Marshal(&TestUser{Id: 123, Name: "abc"})
+	assert.Nil(t, err)
+	r := NewRouter(s)
+	protocol := NewMockProtocol()
+	ctx := NewContext(protocol, r, 0, s)
+
+	r.AddRoute(1, func(u *TestUser) {
+		panic("RouteTest panic")
+	})
+	err = r.emitPacket(ctx, &Packet{
+		Protocol: protocol,
+		Header: &Header{
+			Cmd: 1,
+		},
+		MsgBuff: buff,
+	})
+	assert.NotNil(t, err)
+	assert.Equal(t, ErrHandlerPanic, err.(*flyError).Code)
+}

@@ -102,7 +102,7 @@ func (route *route) call(values []reflect.Value) (result []reflect.Value, err er
 			err = NewFlyError(ErrHandlerPanic)
 			lines := strings.Split(string(debug.Stack()), "\n")
 			stack := strings.Join(lines[6:], "\n")
-			log.Println("Handler panic: %s %s", r, stack)
+			log.Printf("Handler panic: %s\n%s", r, stack)
 		}
 	}()
 	result = route.vHandler.Call(values)

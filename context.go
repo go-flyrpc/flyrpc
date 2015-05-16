@@ -1,6 +1,7 @@
 package flyrpc
 
 import (
+	"encoding/binary"
 	"log"
 	"time"
 )
@@ -44,9 +45,15 @@ func (ctx *Context) SendPacket(flag byte, cmd TCmd, seq TSeq, buff []byte) error
 	})
 }
 
-func (ctx *Context) SendError(err *flyError) error {
-	// TODO
-	return nil
+func (ctx *Context) SendError(cmd TCmd, seq TSeq, err Error) error {
+	buff := make([]byte, 4)
+	binary.BigEndian.PutUint32(buff, uint32(err.Code()))
+	return ctx.SendPacket(
+		TypeRPC|RPCFlagResp|RPCFlagError,
+		cmd,
+		seq,
+		buff,
+	)
 }
 
 func (ctx *Context) SendMessage(cmd TCmd, message Message) error {

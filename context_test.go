@@ -66,7 +66,7 @@ func TestContextCall(t *testing.T) {
 	context.timeout = time.Millisecond
 	err = context.Call(1, reply, &TestUser{Id: 123})
 	assert.Error(t, err)
-	assert.Equal(t, ErrTimeOut, err.(*flyError).Code)
+	assert.Equal(t, ErrTimeOut, err.(Error).Code())
 }
 
 func TestCallAck(t *testing.T) {
@@ -111,7 +111,7 @@ func TestCallTimeout(t *testing.T) {
 	context.timeout = 10 * time.Millisecond
 	err := context.Call(1, reply, &TestUser{Id: 123})
 	assert.Error(t, err)
-	assert.Equal(t, ErrTimeOut, err.(*flyError).Code)
+	assert.Equal(t, ErrTimeOut, err.(Error).Code())
 }
 
 func TestPing(t *testing.T) {

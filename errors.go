@@ -9,6 +9,11 @@ package flyrpc
 
 import "strconv"
 
+type Error interface {
+	Code() int
+	Error() string
+}
+
 const (
 	// Common error
 	ErrTimeOut int = 1000
@@ -39,13 +44,17 @@ var messages = map[int]string{
 }
 
 type flyError struct {
-	Code    int
+	code    int
 	Message string
 	Err     error
 }
 
 func (f *flyError) Error() string {
-	return "FlyError " + strconv.Itoa(f.Code) + " " + f.Message
+	return "FlyError " + strconv.Itoa(f.code) + " " + f.Message
+}
+
+func (f *flyError) Code() int {
+	return f.code
 }
 
 func NewFlyError(code int, args ...error) *flyError {
@@ -54,26 +63,8 @@ func NewFlyError(code int, args ...error) *flyError {
 		err = args[0]
 	}
 	return &flyError{
-		Code:    code,
+		code:    code,
 		Message: messages[code],
 		Err:     err,
 	}
 }
-
-/*
-type ClientError struct {
-	FlyError
-}
-
-type ServerError struct {
-	FlyError
-}
-
-func NewServerError(code int, msg string, err error) *ServerError {
-	return &ServerError{*NewFlyError(code, msg, err)}
-}
-
-func NewClientError(code int, msg string, err error) *ClientError {
-	return &ClientError{*NewFlyError(code, msg, err)}
-}
-*/

@@ -105,7 +105,7 @@ func TestRouter(t *testing.T) {
 		MsgBuff: buff,
 	})
 	assert.NotNil(t, err)
-	assert.Equal(t, ErrNotFound, err.(*flyError).Code)
+	assert.Equal(t, ErrNotFound, err.(Error).Code())
 	// log.Println(outbuff.Bytes())
 }
 
@@ -127,6 +127,5 @@ func TestRouterPanic(t *testing.T) {
 		},
 		MsgBuff: buff,
 	})
-	assert.NotNil(t, err)
-	assert.Equal(t, ErrHandlerPanic, err.(*flyError).Code)
+	assert.Nil(t, err)
 }

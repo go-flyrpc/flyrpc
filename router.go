@@ -130,7 +130,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	}
 	ret, err := route.call(values)
 	if err != nil {
-		return err
+		return ctx.SendError(pkt.Header.Cmd, pkt.Header.Seq, err.(Error))
 	}
 	// retSize := len(ret)
 	// if retSize != route.numOut {
@@ -141,10 +141,10 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		if !ve.IsNil() {
 			err := ve.Interface().(error)
 			if err != nil {
-				flyErr, ok := err.(*flyError)
-				if ok && flyErr.Code < 20000 {
+				flyErr, ok := err.(Error)
+				if ok && flyErr.Code() < 20000 {
 					// client error
-					return ctx.SendError(flyErr)
+					return ctx.SendError(pkt.Header.Cmd, pkt.Header.Seq, flyErr)
 				}
 				return err
 			}

@@ -14,17 +14,18 @@ func TestContextSendMessage(t *testing.T) {
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
+	uid := int32(123)
 
 	c := make(chan *TestUser, 2)
 	router.AddRoute(1, func(ctx *Context, in *TestUser) {
 		c <- in
 	})
 	go func() {
-		err := context.SendMessage(1, &TestUser{Id: 123})
+		err := context.SendMessage(1, &TestUser{Id: uid})
 		assert.Nil(t, err)
 	}()
 	go func() {
-		err := context.SendMessage(1, &TestUser{Id: 123})
+		err := context.SendMessage(1, &TestUser{Id: uid})
 		assert.Nil(t, err)
 	}()
 	pkt, err := protocol.ReadPacket()
@@ -34,9 +35,9 @@ func TestContextSendMessage(t *testing.T) {
 	assert.Nil(t, err)
 	context.emitPacket(pkt)
 	u := <-c
-	assert.Equal(t, 123, u.Id)
+	assert.Equal(t, uid, u.Id)
 	u = <-c
-	assert.Equal(t, 123, u.Id)
+	assert.Equal(t, uid, u.Id)
 }
 
 func TestContextCall(t *testing.T) {
@@ -60,7 +61,7 @@ func TestContextCall(t *testing.T) {
 	}()
 	err := context.Call(1, reply, &TestUser{Id: 123})
 	assert.Nil(t, err)
-	assert.Equal(t, 124, reply.Id)
+	assert.Equal(t, int32(124), reply.Id)
 
 	context.timeout = time.Millisecond
 	err = context.Call(1, reply, &TestUser{Id: 123})

@@ -23,11 +23,9 @@ func TestProtocolReal(t *testing.T) {
 	flag := TypeRPC | RPCFlagResp | RPCFlagError
 
 	err = p1.SendPacket(&Packet{
-		Header: &Header{
-			Flag: flag,
-			Cmd:  222,
-			Seq:  123,
-		},
+		Flag:    flag,
+		Cmd:     222,
+		Seq:     123,
 		MsgBuff: []byte{1, 2, 3, 4, 5, 6},
 	})
 	assert.Nil(t, err)
@@ -35,9 +33,9 @@ func TestProtocolReal(t *testing.T) {
 	pkt, err := p2.ReadPacket()
 
 	log.Println("return packet", pkt.MsgBuff)
-	assert.Equal(t, flag, pkt.Header.Flag)
-	assert.Equal(t, TCmd(222), pkt.Header.Cmd)
-	assert.Equal(t, TSeq(123), pkt.Header.Seq)
+	assert.Equal(t, flag, pkt.Flag)
+	assert.Equal(t, TCmd(222), pkt.Cmd)
+	assert.Equal(t, TSeq(123), pkt.Seq)
 	assert.Equal(t, 6, len(pkt.MsgBuff))
 	assert.Equal(t, byte(6), pkt.MsgBuff[5])
 	err = conn1.Close()

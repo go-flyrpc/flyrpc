@@ -45,7 +45,9 @@ type Packet struct {
 	ClientId int
 	SubType  byte
 	Length   TLength
-	Header   *Header
+	Flag     byte
+	Cmd      TCmd
+	Seq      TSeq
 	MsgBuff  []byte
 }
 

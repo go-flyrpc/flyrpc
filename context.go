@@ -36,12 +36,10 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 func (ctx *Context) SendPacket(flag byte, cmd TCmd, seq TSeq, buff []byte) error {
 	return ctx.Protocol.SendPacket(&Packet{
 		ClientId: ctx.ClientId,
-		Header: &Header{
-			Flag: flag,
-			Cmd:  cmd,
-			Seq:  seq,
-		},
-		MsgBuff: buff,
+		Flag:     flag,
+		Cmd:      cmd,
+		Seq:      seq,
+		MsgBuff:  buff,
 	})
 }
 
@@ -70,21 +68,22 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	if err != nil {
 		return err
 	}
-	header := &Header{
-		Flag: TypeRPC | RPCFlagReq,
-		Cmd:  cmd,
-		Seq:  ctx.getNextSeq(),
+	packet := &Packet{
+		Flag:    TypeRPC | RPCFlagReq,
+		Cmd:     cmd,
+		Seq:     ctx.getNextSeq(),
+		MsgBuff: buff,
 	}
 
 	// Send Packet
-	if err := ctx.Protocol.SendPacket(&Packet{Header: header, MsgBuff: buff}); err != nil {
+	if err := ctx.Protocol.SendPacket(packet); err != nil {
 		return err
 	}
 
 	// init channel before send packet
 	replyChan := make(chan []byte, 1)
 	// set replyChan for cmd | seq
-	chanId := ctx.getChanId(header)
+	chanId := ctx.getChanId(packet)
 	ctx.replyChans[chanId] = replyChan
 
 	// make sure that replyChan is released
@@ -102,11 +101,9 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 
 func (ctx *Context) sendPingPacket(pingFlag byte, seq TSeq, bytes []byte) error {
 	return ctx.Protocol.SendPacket(&Packet{
-		Header: &Header{
-			Flag: TypePing | pingFlag,
-			Cmd:  0,
-			Seq:  seq,
-		},
+		Flag:    TypePing | pingFlag,
+		Cmd:     0,
+		Seq:     seq,
 		Length:  TLength(len(bytes)),
 		MsgBuff: bytes,
 	})
@@ -117,7 +114,7 @@ func (ctx *Context) sendPing(seq TSeq, length TLength) error {
 }
 
 func (ctx *Context) sendPong(pkt *Packet) error {
-	return ctx.sendPingPacket(PingFlagPong, pkt.Header.Seq, pkt.MsgBuff)
+	return ctx.sendPingPacket(PingFlagPong, pkt.Seq, pkt.MsgBuff)
 }
 
 func (ctx *Context) Ping(length TLength, timeout time.Duration) error {
@@ -139,7 +136,7 @@ func (ctx *Context) Ping(length TLength, timeout time.Duration) error {
 }
 
 func (ctx *Context) emitPacket(pkt *Packet) {
-	subType := pkt.Header.Flag & FlagBitsType
+	subType := pkt.Flag & FlagBitsType
 	switch subType {
 	case TypeRPC:
 		ctx.emitRPCPacket(pkt)
@@ -151,30 +148,30 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 }
 
 func (ctx *Context) emitRPCPacket(pkt *Packet) {
-	if pkt.Header.Flag&RPCFlagResp != 0 {
-		chanId := ctx.getChanId(pkt.Header)
+	if pkt.Flag&RPCFlagResp != 0 {
+		chanId := ctx.getChanId(pkt)
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {
-			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt.Header, chanId)
+			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt, chanId)
 			return
 		}
 		replyChan <- pkt.MsgBuff
 		return
 	}
 	ctx.Packet = pkt
-	log.Println(ctx.ClientId, "OnMessage", pkt.Header.Cmd)
+	log.Println(ctx.ClientId, "OnMessage", pkt.Cmd)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
 		log.Println(ctx.ClientId, "Error to call packet", err)
 	}
 }
 
 func (ctx *Context) emitPingPacket(pkt *Packet) {
-	if pkt.Header.Flag&PingFlagPing != 0 {
+	if pkt.Flag&PingFlagPing != 0 {
 		log.Println(ctx.ClientId, "sendPong")
 		ctx.sendPong(pkt)
-	} else if pkt.Header.Flag&PingFlagPong != 0 {
+	} else if pkt.Flag&PingFlagPong != 0 {
 		log.Println(ctx.ClientId, "recvPong")
-		ctx.pingChans[pkt.Header.Seq] <- pkt.MsgBuff
+		ctx.pingChans[pkt.Seq] <- pkt.MsgBuff
 	}
 }
 
@@ -183,6 +180,6 @@ func (ctx *Context) getNextSeq() TSeq {
 	return ctx.nextSeq
 }
 
-func (ctx *Context) getChanId(header *Header) int {
-	return int(header.Cmd)<<16 | int(header.Seq)
+func (ctx *Context) getChanId(pkt *Packet) int {
+	return int(pkt.Cmd)<<16 | int(pkt.Seq)
 }

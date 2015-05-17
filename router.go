@@ -130,7 +130,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	}
 	ret, err := route.call(values)
 	if err != nil {
-		return ctx.SendError(pkt.Header.Cmd, pkt.Header.Seq, err.(Error))
+		return ctx.SendError(pkt.Cmd, pkt.Seq, err.(Error))
 	}
 	// retSize := len(ret)
 	// if retSize != route.numOut {
@@ -144,13 +144,13 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 				flyErr, ok := err.(Error)
 				if ok && flyErr.Code() < 20000 {
 					// client error
-					return ctx.SendError(pkt.Header.Cmd, pkt.Header.Seq, flyErr)
+					return ctx.SendError(pkt.Cmd, pkt.Seq, flyErr)
 				}
 				return err
 			}
 		}
 	}
-	if pkt.Header.Flag&RPCFlagReq == 0 {
+	if pkt.Flag&RPCFlagReq == 0 {
 		// not a call, no response
 		return nil
 	}
@@ -163,15 +163,15 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		}
 		return ctx.SendPacket(
 			TypeRPC|RPCFlagResp,
-			pkt.Header.Cmd,
-			pkt.Header.Seq,
+			pkt.Cmd,
+			pkt.Seq,
 			bytes)
 	}
 	// just return an empty ack message
 	return ctx.SendPacket(
 		TypeRPC|RPCFlagResp,
-		pkt.Header.Cmd,
-		pkt.Header.Seq,
+		pkt.Cmd,
+		pkt.Seq,
 		[]byte{},
 	)
 	return nil
@@ -197,7 +197,7 @@ func (router *router) GetRoute(cmd TCmd) Route {
 }
 
 func (router *router) emitPacket(ctx *Context, p *Packet) error {
-	rt := router.GetRoute(p.Header.Cmd)
+	rt := router.GetRoute(p.Cmd)
 	if rt == nil {
 		return NewFlyError(ErrNotFound, nil)
 	}

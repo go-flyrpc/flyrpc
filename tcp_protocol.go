@@ -63,8 +63,13 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	if pk.Length > MaxLength {
 		return NewFlyError(ErrBuffTooLong, nil)
 	}
+	header := &Header{
+		Flag: pk.Flag,
+		Cmd:  pk.Cmd,
+		Seq:  pk.Seq,
+	}
 	// log.Println("Write header", pk.Header)
-	if err := binary.Write(p.Writer, binary.BigEndian, pk.Header); err != nil {
+	if err := binary.Write(p.Writer, binary.BigEndian, header); err != nil {
 		return err
 	}
 	// log.Println("Write Length:", pk.Length)
@@ -117,7 +122,9 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 		ClientId: clientId,
 		SubType:  subType,
 		Length:   length,
-		Header:   header,
+		Flag:     header.Flag,
+		Cmd:      header.Cmd,
+		Seq:      header.Seq,
 		MsgBuff:  buf,
 	}
 	return packet, nil

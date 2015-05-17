@@ -26,18 +26,10 @@ const (
 	// LFLAG_ENCRYPT     byte = 0x01
 )
 
-type TCmd uint16
-type TSeq uint8
+type TSeq uint16
 type TLength uint16
 
 const MaxLength = ^TLength(0)
-const MaxCommand = ^TCmd(0)
-
-type Header struct {
-	Flag byte
-	Cmd  TCmd
-	Seq  TSeq
-}
 
 type Packet struct {
 	// TODO remove this from packet
@@ -46,8 +38,8 @@ type Packet struct {
 	SubType  byte
 	Length   TLength
 	Flag     byte
-	Cmd      TCmd
 	Seq      TSeq
+	Cmd      string
 	MsgBuff  []byte
 }
 

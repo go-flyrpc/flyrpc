@@ -24,7 +24,7 @@ func TestProtocolReal(t *testing.T) {
 
 	err = p1.SendPacket(&Packet{
 		Flag:    flag,
-		Cmd:     222,
+		Cmd:     "222",
 		Seq:     123,
 		MsgBuff: []byte{1, 2, 3, 4, 5, 6},
 	})
@@ -32,9 +32,10 @@ func TestProtocolReal(t *testing.T) {
 
 	pkt, err := p2.ReadPacket()
 
+	assert.Nil(t, err)
 	log.Println("return packet", pkt.MsgBuff)
 	assert.Equal(t, flag, pkt.Flag)
-	assert.Equal(t, TCmd(222), pkt.Cmd)
+	assert.Equal(t, "222", pkt.Cmd)
 	assert.Equal(t, TSeq(123), pkt.Seq)
 	assert.Equal(t, 6, len(pkt.MsgBuff))
 	assert.Equal(t, byte(6), pkt.MsgBuff[5])

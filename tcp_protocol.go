@@ -56,31 +56,37 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 		}
 	}
 	// if support zip {
-	// DO zip
+	// TODO zip
+	// TODO crc
 	// buff = zip(buff)
 	// }
 
-	header := &Header{
-		Flag: pk.Flag,
-		Cmd:  pk.Cmd,
-		Seq:  pk.Seq,
-	}
-	pk.Length = TLength(len(pk.MsgBuff) + binary.Size(header))
+	pk.Length = TLength(4 + len(pk.MsgBuff) + len(pk.Cmd))
 	if pk.Length > MaxLength {
 		return NewFlyError(ErrBuffTooLong, nil)
 	}
-	// log.Println("Write Length:", pk.Length)
 
+	// write Length
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Length); err != nil {
 		return err
 	}
 
-	// log.Println("Write header", pk.Header)
-	if err := binary.Write(p.Writer, binary.BigEndian, header); err != nil {
+	// write Flag
+	if err := binary.Write(p.Writer, binary.BigEndian, pk.Flag); err != nil {
 		return err
 	}
 
-	// log.Println("Write Buff:", pk.MsgBuff)
+	// write Seq
+	if err := binary.Write(p.Writer, binary.BigEndian, pk.Seq); err != nil {
+		return err
+	}
+
+	// write Cmd
+	if _, err := p.Writer.WriteString(pk.Cmd + "\n"); err != nil {
+		return err
+	}
+
+	// write Buff
 	if _, err := p.Writer.Write(pk.MsgBuff); err != nil {
 		return err
 	}
@@ -88,49 +94,54 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 }
 
 func (p *TcpProtocol) ReadPacket() (*Packet, error) {
-	var clientId = 0
+	pkt := &Packet{}
 	// only for server
 	if p.IsMultiplex {
-		err := binary.Read(p.Reader, binary.BigEndian, &clientId)
+		err := binary.Read(p.Reader, binary.BigEndian, &pkt.ClientId)
 		if err != nil {
 			return nil, err
 		}
 	}
 	// read length
-	var length TLength
-	err := binary.Read(p.Reader, binary.BigEndian, &length)
-	// log.Println("Read Length", length)
+	err := binary.Read(p.Reader, binary.BigEndian, &pkt.Length)
 	if err != nil {
 		return nil, err
 	}
-	buf := make([]byte, length)
+
+	// read Full Packet
+	buf := make([]byte, pkt.Length)
 	_, err = io.ReadFull(p.Reader, buf)
-	// log.Println("Read buff", buf)
 	if err != nil {
 		return nil, err
 	}
+	// TODO checksum
+	// TODO unzip
 
 	reader := bytes.NewBuffer(buf)
 
-	// read header
-	header := &Header{}
-	err = binary.Read(reader, binary.BigEndian, header)
-	// log.Println("Read Header", header)
+	// read Flag
+	pkt.Flag, err = reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
+	pkt.SubType = pkt.Flag & FlagBitsType
 
-	subType := header.Flag & FlagBitsType
-
-	// log.Println("return packet", buf)
-	packet := &Packet{
-		ClientId: clientId,
-		SubType:  subType,
-		Length:   length,
-		Flag:     header.Flag,
-		Cmd:      header.Cmd,
-		Seq:      header.Seq,
-		MsgBuff:  reader.Bytes(),
+	// read Seq
+	var seq uint16
+	err = binary.Read(reader, binary.BigEndian, &seq)
+	if err != nil {
+		return nil, err
 	}
-	return packet, nil
+	pkt.Seq = TSeq(seq)
+
+	// read Cmd
+	cmd, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+	pkt.Cmd = cmd[:len(cmd)-1]
+
+	// read MsgBuff
+	pkt.MsgBuff = reader.Bytes()
+	return pkt, nil
 }

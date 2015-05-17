@@ -45,7 +45,7 @@ func NewServer(opts *ServerOpts) *Server {
 	}
 }
 
-func (s *Server) Broadcast(clientIds []int, cmd TCmd, v Message) error {
+func (s *Server) Broadcast(clientIds []int, cmd string, v Message) error {
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (s *Server) OnConnect(connectHandler func(*Context)) {
 	s.connectHandlers = append(s.connectHandlers, connectHandler)
 }
 
-func (s *Server) OnMessage(cmd TCmd, handler HandlerFunc) {
+func (s *Server) OnMessage(cmd string, handler HandlerFunc) {
 	s.Router.AddRoute(cmd, handler)
 }
 
@@ -77,7 +77,7 @@ func (s *Server) emitContext(ctx *Context) {
 	}
 }
 
-func (s *Server) SendMessage(clientId int, cmd TCmd, v Message) error {
+func (s *Server) SendMessage(clientId int, cmd string, v Message) error {
 	return s.GetContext(clientId).SendMessage(cmd, v)
 }
 

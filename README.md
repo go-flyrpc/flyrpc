@@ -9,9 +9,9 @@ FlyRPC high speed flexible network framework.
 
 ## Message Protocol
 
-| Packet Length | Flag   | Command   | Sequence  | Buffer |
-|:-------------:| ------ |:---------:| ---------:| ------ |
-| 2 byte        | 1 byte | 2 byte    | 1 byte    | n byte |
+| Packet Length | Flag   | Sequence  | Command   | Buffer |
+|:-------------:| ------ | ---------:|:---------:| ------ |
+| 2 byte        | 1 byte | 2 byte    | string\n  | n byte |
 
 ### Flag Spec
 

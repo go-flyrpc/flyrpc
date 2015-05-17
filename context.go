@@ -16,7 +16,7 @@ type Context struct {
 	serializer Serializer
 	nextSeq    TSeq
 	pingSeq    TSeq
-	replyChans map[int]chan []byte
+	replyChans map[TSeq]chan []byte
 	pingChans  map[TSeq]chan []byte
 	timeout    time.Duration
 }
@@ -27,13 +27,13 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 		Router:     router,
 		ClientId:   clientId,
 		serializer: serializer,
-		replyChans: make(map[int]chan []byte),
+		replyChans: make(map[TSeq]chan []byte),
 		pingChans:  make(map[TSeq]chan []byte),
 		timeout:    10 * time.Second,
 	}
 }
 
-func (ctx *Context) SendPacket(flag byte, cmd TCmd, seq TSeq, buff []byte) error {
+func (ctx *Context) SendPacket(flag byte, cmd string, seq TSeq, buff []byte) error {
 	return ctx.Protocol.SendPacket(&Packet{
 		ClientId: ctx.ClientId,
 		Flag:     flag,
@@ -43,7 +43,7 @@ func (ctx *Context) SendPacket(flag byte, cmd TCmd, seq TSeq, buff []byte) error
 	})
 }
 
-func (ctx *Context) SendError(cmd TCmd, seq TSeq, err Error) error {
+func (ctx *Context) SendError(cmd string, seq TSeq, err Error) error {
 	buff := make([]byte, 4)
 	binary.BigEndian.PutUint32(buff, uint32(err.Code()))
 	return ctx.SendPacket(
@@ -54,7 +54,7 @@ func (ctx *Context) SendError(cmd TCmd, seq TSeq, err Error) error {
 	)
 }
 
-func (ctx *Context) SendMessage(cmd TCmd, message Message) error {
+func (ctx *Context) SendMessage(cmd string, message Message) error {
 	buff, err := ctx.serializer.Marshal(message)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (ctx *Context) SendMessage(cmd TCmd, message Message) error {
 	return ctx.SendPacket(TypeRPC, cmd, ctx.getNextSeq(), buff)
 }
 
-func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
+func (ctx *Context) Call(cmd string, reply Message, message Message) error {
 	log.Println(ctx.ClientId, "Call", cmd, message)
 	buff, err := ctx.serializer.Marshal(message)
 	if err != nil {
@@ -83,11 +83,10 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	// init channel before send packet
 	replyChan := make(chan []byte, 1)
 	// set replyChan for cmd | seq
-	chanId := ctx.getChanId(packet)
-	ctx.replyChans[chanId] = replyChan
+	ctx.replyChans[packet.Seq] = replyChan
 
 	// make sure that replyChan is released
-	defer delete(ctx.replyChans, chanId)
+	defer delete(ctx.replyChans, packet.Seq)
 	select {
 	case rBuff := <-replyChan:
 		if reply != nil {
@@ -102,7 +101,7 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 func (ctx *Context) sendPingPacket(pingFlag byte, seq TSeq, bytes []byte) error {
 	return ctx.Protocol.SendPacket(&Packet{
 		Flag:    TypePing | pingFlag,
-		Cmd:     0,
+		Cmd:     "",
 		Seq:     seq,
 		Length:  TLength(len(bytes)),
 		MsgBuff: bytes,
@@ -149,10 +148,9 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 
 func (ctx *Context) emitRPCPacket(pkt *Packet) {
 	if pkt.Flag&RPCFlagResp != 0 {
-		chanId := ctx.getChanId(pkt)
-		replyChan := ctx.replyChans[chanId]
+		replyChan := ctx.replyChans[pkt.Seq]
 		if replyChan == nil {
-			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt, chanId)
+			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt)
 			return
 		}
 		replyChan <- pkt.MsgBuff
@@ -178,8 +176,4 @@ func (ctx *Context) emitPingPacket(pkt *Packet) {
 func (ctx *Context) getNextSeq() TSeq {
 	ctx.nextSeq++
 	return ctx.nextSeq
-}
-
-func (ctx *Context) getChanId(pkt *Packet) int {
-	return int(pkt.Cmd)<<16 | int(pkt.Seq)
 }

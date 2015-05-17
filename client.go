@@ -44,7 +44,7 @@ func (c *Client) handlePackets() {
 	}
 }
 
-func (c *Client) OnMessage(cmd TCmd, handler HandlerFunc) {
+func (c *Client) OnMessage(cmd string, handler HandlerFunc) {
 	c.Router.AddRoute(cmd, handler)
 }
 

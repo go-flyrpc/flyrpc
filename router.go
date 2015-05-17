@@ -23,8 +23,8 @@ type Route interface {
 }
 
 type Router interface {
-	AddRoute(TCmd, HandlerFunc)
-	GetRoute(TCmd) Route
+	AddRoute(string, HandlerFunc)
+	GetRoute(string) Route
 	emitPacket(*Context, *Packet) error
 }
 
@@ -178,21 +178,21 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 }
 
 type router struct {
-	routes     map[TCmd]Route
+	routes     map[string]Route
 	serializer Serializer
 	// routesLock sync.RWMutex
 }
 
 func NewRouter(serializer Serializer) Router {
-	return &router{routes: make(map[TCmd]Route), serializer: serializer}
+	return &router{routes: make(map[string]Route), serializer: serializer}
 }
 
-func (router *router) AddRoute(cmd TCmd, h HandlerFunc) {
+func (router *router) AddRoute(cmd string, h HandlerFunc) {
 	route := NewRoute(h, router.serializer)
 	router.routes[cmd] = route
 }
 
-func (router *router) GetRoute(cmd TCmd) Route {
+func (router *router) GetRoute(cmd string) Route {
 	return router.routes[cmd]
 }
 

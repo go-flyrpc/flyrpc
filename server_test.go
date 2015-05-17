@@ -25,7 +25,7 @@ func TestServerMultiConnect(t *testing.T) {
 	})
 	wg := &sync.WaitGroup{}
 	server.OnConnect(func(ctx *Context) {
-		ctx.SendMessage(1, &TestUser{Id: 123})
+		ctx.SendMessage("1", &TestUser{Id: 123})
 	})
 	go func() {
 		err := server.Listen("127.0.0.1:15555")
@@ -35,14 +35,14 @@ func TestServerMultiConnect(t *testing.T) {
 	wg.Add(1)
 	c1 := makeClient(t, "127.0.0.1:15555")
 	assert.NotNil(t, c1)
-	c1.OnMessage(1, func(ctx *Context, user *TestUser) {
+	c1.OnMessage("1", func(ctx *Context, user *TestUser) {
 		assert.Equal(t, int32(123), user.Id)
 		wg.Done()
 	})
 	wg.Add(1)
 	c2 := makeClient(t, "127.0.0.1:15555")
 	assert.NotNil(t, c2)
-	c2.OnMessage(1, func(ctx *Context, user *TestUser) {
+	c2.OnMessage("1", func(ctx *Context, user *TestUser) {
 		assert.Equal(t, int32(123), user.Id)
 		wg.Done()
 	})
@@ -56,7 +56,7 @@ func TestServerHandlePacket(t *testing.T) {
 		Serializer: Protobuf,
 	})
 	wg := &sync.WaitGroup{}
-	server.OnMessage(1, func(ctx *Context, u *TestUser) {
+	server.OnMessage("1", func(ctx *Context, u *TestUser) {
 		assert.Equal(t, uid, u.Id)
 		wg.Done()
 	})
@@ -67,7 +67,7 @@ func TestServerHandlePacket(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 	wg.Add(1)
 	client := makeClient(t, "127.0.0.1:15556")
-	client.SendMessage(1, &TestUser{Id: 123})
+	client.SendMessage("1", &TestUser{Id: 123})
 	wg.Wait()
 	server.Close()
 }

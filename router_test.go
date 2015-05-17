@@ -21,45 +21,45 @@ func TestRouter(t *testing.T) {
 	protocol := NewMockProtocol()
 	ctx := NewContext(protocol, r, 0, s)
 
-	r.AddRoute(1, func(u *TestUser) {
+	r.AddRoute("1", func(u *TestUser) {
 		p1 = u
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      1,
+		Cmd:      "1",
 		MsgBuff:  buff,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uid, p1.Id)
 
-	r.AddRoute(2, func(pkt *Packet, u *TestUser) error {
-		assert.Equal(t, pkt.Cmd, TCmd(2))
+	r.AddRoute("2", func(pkt *Packet, u *TestUser) error {
+		assert.Equal(t, "2", pkt.Cmd)
 		p2 = u
 		return errors.New("e1")
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      2,
+		Cmd:      "2",
 		MsgBuff:  buff,
 	})
 	assert.NotNil(t, err)
 	assert.Equal(t, "e1", err.Error())
 	assert.Equal(t, uid, p2.Id)
 
-	r.AddRoute(3, func(ctx *Context, u *TestUser) *TestUser {
+	r.AddRoute("3", func(ctx *Context, u *TestUser) *TestUser {
 		p3 = u
 		return &TestUser{Id: 567}
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      3,
+		Cmd:      "3",
 		MsgBuff:  buff,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uid, p3.Id)
 	// assert.True(t, len(outbuff.Bytes()) > 0)
 
-	r.AddRoute(4, func(bytes []byte, u *TestUser) (*TestUser, error) {
+	r.AddRoute("4", func(bytes []byte, u *TestUser) (*TestUser, error) {
 		u2 := &TestUser{}
 		s.Unmarshal(bytes, u2)
 		assert.Equal(t, u.Id, u2.Id)
@@ -68,19 +68,19 @@ func TestRouter(t *testing.T) {
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      4,
+		Cmd:      "4",
 		MsgBuff:  buff,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uid, p4.Id)
 	// assert.True(t, len(outbuff.Bytes()) > 0)
 
-	r.AddRoute(5, func(ctx *Context, u *TestUser) (*TestUser, error) {
+	r.AddRoute("5", func(ctx *Context, u *TestUser) (*TestUser, error) {
 		return nil, NewFlyError(10000)
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      5,
+		Cmd:      "5",
 		MsgBuff:  buff,
 	})
 	assert.Nil(t, err)
@@ -89,7 +89,7 @@ func TestRouter(t *testing.T) {
 
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      100,
+		Cmd:      "100",
 		MsgBuff:  buff,
 	})
 	assert.NotNil(t, err)
@@ -105,12 +105,12 @@ func TestRouterPanic(t *testing.T) {
 	protocol := NewMockProtocol()
 	ctx := NewContext(protocol, r, 0, s)
 
-	r.AddRoute(1, func(u *TestUser) {
+	r.AddRoute("1", func(u *TestUser) {
 		panic("RouteTest panic")
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      1,
+		Cmd:      "1",
 		MsgBuff:  buff,
 	})
 	assert.Nil(t, err)

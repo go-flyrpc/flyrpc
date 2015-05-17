@@ -9,10 +9,10 @@ FlyRPC是适合高频率通信的网络框架。
 
 ## 消息协议
 
-| Packet Length | Flag   | Command   | Sequence  | Buffer |
-|:-------------:| ------ |:---------:| ---------:| ------ |
-| 2 byte        | 1 byte | 2 byte    | 1 byte    | n byte |
-| 消息长度      | 标志位 | 命令ID    | 序列ID    | 消息体 |
+| Packet Length | Flag   | Sequence  | Command   | Buffer |
+|:-------------:| ------ | ---------:|:---------:| ------ |
+| 2 byte        | 1 byte | 2 byte    | string\n  | n byte |
+| 消息长度      | 标志位 | 序列ID    | 命令ID    | 消息体 |
 
 ### Flag说明
 

@@ -21,7 +21,7 @@ FlyRPC high speed flexible network framework.
 
 | SubType | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 | ------- |---|---|---|---|---|---|---|---|
-| RPC     | 1 | 1 | ? | ? | ? | Buffer | Error | Resp |
+| RPC     | 1 | 1 | ? | ? | Buffer | Error | Resp | Req |
 | Ping    | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
 | Helo    | 0 | 1 | ? | ? | ? | ? | ? | ? |
 | MQ      | 0 | 0 | ? | ? | ? | ? | ? | ? |

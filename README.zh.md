@@ -5,6 +5,10 @@
 
 FlyRPC是适合高频率通信的网络框架。
 
+```
+go get gopkg.in/flyrpc.v1
+```
+
 # 协议
 
 ## 消息协议

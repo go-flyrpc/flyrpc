@@ -5,6 +5,10 @@
 
 FlyRPC high speed flexible network framework.
 
+```
+go get gopkg.in/flyrpc.v1
+```
+
 # Protocol
 
 ## Message Protocol

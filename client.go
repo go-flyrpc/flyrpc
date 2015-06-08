@@ -40,7 +40,7 @@ func (c *Client) handlePackets() {
 			c.Close()
 			break
 		}
-		c.Context.emitPacket(packet)
+		go c.Context.emitPacket(packet)
 	}
 }
 

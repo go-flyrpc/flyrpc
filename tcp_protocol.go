@@ -61,7 +61,8 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	// buff = zip(buff)
 	// }
 
-	pk.Length = TLength(4 + len(pk.MsgBuff) + len(pk.Cmd))
+	// flag + trans-flag + seq + \n = 5 byte
+	pk.Length = TLength(5 + len(pk.MsgBuff) + len(pk.Cmd))
 	if pk.Length > MaxLength {
 		return NewFlyError(ErrBuffTooLong, nil)
 	}
@@ -73,6 +74,11 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 
 	// write Flag
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Flag); err != nil {
+		return err
+	}
+
+	// write Transfer Flag
+	if err := binary.Write(p.Writer, binary.BigEndian, pk.TransferFlag); err != nil {
 		return err
 	}
 
@@ -125,6 +131,12 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 		return nil, err
 	}
 	pkt.SubType = pkt.Flag & FlagBitsType
+
+	// read TransferFlag
+	pkt.TransferFlag, err = reader.ReadByte()
+	if err != nil {
+		return nil, err
+	}
 
 	// read Seq
 	var seq uint16

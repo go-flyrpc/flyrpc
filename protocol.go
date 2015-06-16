@@ -38,9 +38,12 @@ type Packet struct {
 	SubType  byte
 	Length   TLength
 	Flag     byte
-	Seq      TSeq
-	Cmd      string
-	MsgBuff  []byte
+	// 2bit accept-encoding, 2bit encoding, 2bit accept-serializer, 2bit serializer
+	TransferFlag byte
+	// message sequence
+	Seq     TSeq
+	Cmd     string
+	MsgBuff []byte
 }
 
 type Protocol interface {

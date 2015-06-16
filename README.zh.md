@@ -13,10 +13,10 @@ go get gopkg.in/flyrpc.v1
 
 ## 消息协议
 
-| Packet Length | Flag   | Sequence  | Command   | Buffer |
-|:-------------:| ------ | ---------:|:---------:| ------ |
-| 2 byte        | 1 byte | 2 byte    | string\n  | n byte |
-| 消息长度      | 标志位 | 序列ID    | 命令ID    | 消息体 |
+| Packet Length | Flag   | Transfer Flag | Sequence  | Command   | Buffer |
+|:-------------:| ------ | ------------- | ---------:|:---------:| ------ |
+| 2 byte        | 1 byte | 1 byte        | 2 byte    | string\n  | n byte |
+| 消息长度      | 标志位 | 传输控制位    | 序列ID    | 命令ID    | 消息体 |
 
 ### Flag说明
 
@@ -30,6 +30,31 @@ go get gopkg.in/flyrpc.v1
 | Ping   | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
 | Helo   | 0 | 1 | ? | ? | ? | ? | ? | ? |
 | MQ     | 0 | 0 | ? | ? | ? | ? | ? | ? |
+
+### Transfer Flag
+
+Transfer Flag 0x00 should be `plain` `json`.
+
+Not complete.
+
+Design A
+
+| Accept Encoding | Encoding | Accept Serializer | Serializer |
+|:--------------- | -------- | ----------------- | ---------- |
+| 2 bits          | 2 bits   | 2 bits            | 2 bits     |
+
+Up to 4 encoding and 4 serializer.
+
+Design B
+
+| Encoding | Serializer |
+| -------- | ---------- |
+| 2 bits   | 2 bits     |
+
+If HELO, it means Accept-Encoding and Accept-Serializer
+
+Up to 16 encoding and 16 serializer. (Who need 16 encoding and 16 serializer)
+
 
 ## 服务器内部多路复用协议
 

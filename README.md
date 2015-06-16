@@ -13,9 +13,9 @@ go get gopkg.in/flyrpc.v1
 
 ## Message Protocol
 
-| Packet Length | Flag   | Sequence  | Command   | Buffer |
-|:-------------:| ------ | ---------:|:---------:| ------ |
-| 2 byte        | 1 byte | 2 byte    | string\n  | n byte |
+| Packet Length | Flag   | Transfer Flag | Sequence  | Command   | Buffer  |
+|:-------------:| ------ | ------------- | ---------:|:---------:| ------- |
+| 2 bytes       | 1 byte | 1 byte        | 2 bytes   | string\n  | n bytes |
 
 ### Flag Spec
 
@@ -29,6 +29,31 @@ go get gopkg.in/flyrpc.v1
 | Ping    | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
 | Helo    | 0 | 1 | ? | ? | ? | ? | ? | ? |
 | MQ      | 0 | 0 | ? | ? | ? | ? | ? | ? |
+
+### Transfer Flag
+
+Transfer Flag 0x00 should be `plain` `json`.
+
+Not complete.
+
+Design A
+
+| Accept Encoding | Encoding | Accept Serializer | Serializer |
+|:--------------- | -------- | ----------------- | ---------- |
+| 2 bits          | 2 bits   | 2 bits            | 2 bits     |
+
+Up to 4 encoding and 4 serializer.
+
+Design B
+
+| Encoding | Serializer |
+| -------- | ---------- |
+| 2 bits   | 2 bits     |
+
+If HELO, it means Accept-Encoding and Accept-Serializer
+
+Up to 16 encoding and 16 serializer. (Who need 16 encoding and 16 serializer)
+
 
 ## Internal Multiplexed Protocol
 

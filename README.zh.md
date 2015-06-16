@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/flyrpc/flyrpc/badge.svg?branch=master)](https://coveralls.io/r/flyrpc/flyrpc?branch=master)
 
 
-FlyRPC是适合高频率通信的网络框架。
+FlyRPC，用最少的流量满足最多的需求。
 
 ```
 go get gopkg.in/flyrpc.v1
@@ -26,10 +26,12 @@ go get gopkg.in/flyrpc.v1
 
 | 子协议 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 | ------ |---|---|---|---|---|---|---|---|
-| RPC    | 1 | 1 | ? | ? | Buffer | Error | Resp | Req |
-| Ping   | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
-| Helo   | 0 | 1 | ? | ? | ? | ? | ? | ? |
-| MQ     | 0 | 0 | ? | ? | ? | ? | ? | ? |
+| RPC    | 1 | 1 | ? | CRC16 | Buffer | Error | Resp | Req |
+| Ping   | 1 | 0 | ? | CRC16 | ? | ? | Pong | Ping |
+| Helo   | 0 | 1 | ? | CRC16 | ? | ? | ? | ? |
+| MQ     | 0 | 0 | ? | CRC16 | ? | ? | ? | ? |
+
+CRC16 允许加盐
 
 ### Transfer Flag
 

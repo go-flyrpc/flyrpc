@@ -2,8 +2,7 @@
 [![Build Status](https://travis-ci.org/flyrpc/flyrpc.svg?branch=master)](https://travis-ci.org/flyrpc/flyrpc)
 [![Coverage Status](https://coveralls.io/repos/flyrpc/flyrpc/badge.svg?branch=master)](https://coveralls.io/r/flyrpc/flyrpc?branch=master)
 
-
-FlyRPC high speed flexible network framework.
+FlyRPC is a PROTOCOL implements maximum features with minimal packet size.
 
 ```
 go get gopkg.in/flyrpc.v1
@@ -13,9 +12,9 @@ go get gopkg.in/flyrpc.v1
 
 ## Message Protocol
 
-| Packet Length | Flag   | Transfer Flag | Sequence  | Command   | Buffer  |
-|:-------------:| ------ | ------------- | ---------:|:---------:| ------- |
-| 2 bytes       | 1 byte | 1 byte        | 2 bytes   | string\n  | n bytes |
+| Packet Length | Flag   | Transfer Flag | Sequence  | Command   | Buffer  | CRC16   |
+|:-------------:| ------ | ------------- | ---------:|:---------:| ------- | ------- |
+| 2 bytes       | 1 byte | 1 byte        | 2 bytes   | string\n  | n bytes | 2 bytes |
 
 ### Flag Spec
 
@@ -25,16 +24,20 @@ go get gopkg.in/flyrpc.v1
 
 | SubType | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 | ------- |---|---|---|---|---|---|---|---|
-| RPC     | 1 | 1 | ? | ? | Buffer | Error | Resp | Req |
-| Ping    | 1 | 0 | ? | ? | ? | ? | Pong | Ping |
-| Helo    | 0 | 1 | ? | ? | ? | ? | ? | ? |
-| MQ      | 0 | 0 | ? | ? | ? | ? | ? | ? |
+| RPC     | 1 | 1 | ? | CRC16 | Buffer | Error | Resp | Req |
+| Ping    | 1 | 0 | ? | CRC16 | ? | ? | Pong | Ping |
+| Helo    | 0 | 1 | ? | CRC16 | ? | ? | ? | ? |
+| MQ      | 0 | 0 | ? | CRC16 | ? | ? | ? | ? |
+
+CRC16 allow to add salt.
+
+_NOTE_ CRC16 not support yet, keep it 0.
 
 ### Transfer Flag
 
 Transfer Flag 0x00 should be `plain` `json`.
 
-Not complete.
+_NOTE_ Not complete.
 
 Design A
 

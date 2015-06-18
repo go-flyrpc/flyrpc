@@ -76,7 +76,7 @@ func TestRouter(t *testing.T) {
 	// assert.True(t, len(outbuff.Bytes()) > 0)
 
 	r.AddRoute("5", func(ctx *Context, u *TestUser) (*TestUser, error) {
-		return nil, NewFlyError(10000)
+		return nil, NewFlyError("FOO")
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
@@ -84,8 +84,6 @@ func TestRouter(t *testing.T) {
 		MsgBuff:  buff,
 	})
 	assert.Nil(t, err)
-	// assert.NotNil(t, err)
-	// assert.Equal(t, 10000, err.(*FlyError).Code)
 
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
@@ -94,7 +92,6 @@ func TestRouter(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 	assert.Equal(t, ErrNotFound, err.(Error).Code())
-	// log.Println(outbuff.Bytes())
 }
 
 func TestRouterPanic(t *testing.T) {

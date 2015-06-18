@@ -7,64 +7,62 @@ It support Call/Response  or Send/Receive pattern.
 */
 package flyrpc
 
-import "strconv"
-
 type Error interface {
-	Code() int
+	Code() string
 	Error() string
 }
 
 const (
 	// Common error
-	ErrTimeOut int = 1000
+	ErrTimeOut string = "TIMEOUT"
 
 	// 10000 - 20000 client error
 
-	ErrNotFound       int = 10000
-	ErrUnknownSubType int = 10001
-	ErrBuffTooLong    int = 11000
+	ErrNotFound       string = "NOT_FOUND"
+	ErrUnknownSubType string = "UNKNOWN_SUB_TYPE"
+	ErrBuffTooLong    string = "BUFF_TOO_LONG"
 	// 20000 + server error
 
-	ErrNoWriter     int = 21000
-	ErrWriterClosed int = 21001
-	ErrHandlerPanic int = 22000
+	ErrNoWriter     string = "NO_WRITER"
+	ErrWriterClosed string = "WRITER_CLOSED"
+	ErrHandlerPanic string = "HANDLER_PANIC"
 	// 25000 + serializer error
 
-	ErrNotProtoMessage int = 25010
+	ErrNotProtoMessage string = "NOT_PROTOBUF_MESSAGE"
 )
 
-var messages = map[int]string{
-	ErrTimeOut:         "TIMEOUT",
-	ErrNotFound:        "NOT_FOUND",
-	ErrBuffTooLong:     "BUFF_TOO_LONG",
-	ErrNoWriter:        "NO_WRITER",
-	ErrWriterClosed:    "WRITER_CLOSED",
-	ErrNotProtoMessage: "NOT_PROTO_MESSAGE",
-	ErrUnknownSubType:  "UNKNOWN_SUB_TYPE",
-}
-
 type flyError struct {
-	code    int
-	Message string
-	Err     error
+	code string
+	Err  error
 }
 
 func (f *flyError) Error() string {
-	return "FlyError " + strconv.Itoa(f.code) + " " + f.Message
-}
-
-func (f *flyError) Code() int {
 	return f.code
 }
 
-func NewFlyError(code int, args ...error) *flyError {
+func (f *flyError) Code() string {
+	return f.code
+}
+
+func NewFlyError(code string, args ...error) *flyError {
 	var err error
 	if len(args) > 0 {
 		err = args[0]
 	}
 	return &flyError{
-		code:    code,
-		Message: messages[code],
-		Err:     err,
+		code: code,
+		Err:  err,
+	}
+}
+
+type ReplyError struct {
+	flyError
+	pkt *Packet
+}
+
+func newReplyError(code string, pkt *Packet) *ReplyError {
+	return &ReplyError{
+		flyError: flyError{code: code},
+		pkt:      pkt,
 	}
 }

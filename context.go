@@ -1,7 +1,6 @@
 package flyrpc
 
 import (
-	"encoding/binary"
 	"log"
 	"time"
 )
@@ -16,7 +15,7 @@ type Context struct {
 	serializer Serializer
 	nextSeq    TSeq
 	pingSeq    TSeq
-	replyChans map[TSeq]chan []byte
+	replyChans map[TSeq]chan *Packet
 	pingChans  map[TSeq]chan []byte
 	timeout    time.Duration
 }
@@ -27,7 +26,7 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 		Router:     router,
 		ClientId:   clientId,
 		serializer: serializer,
-		replyChans: make(map[TSeq]chan []byte),
+		replyChans: make(map[TSeq]chan *Packet),
 		pingChans:  make(map[TSeq]chan []byte),
 		timeout:    10 * time.Second,
 	}
@@ -44,8 +43,7 @@ func (ctx *Context) SendPacket(flag byte, cmd string, seq TSeq, buff []byte) err
 }
 
 func (ctx *Context) SendError(cmd string, seq TSeq, err Error) error {
-	buff := make([]byte, 4)
-	binary.BigEndian.PutUint32(buff, uint32(err.Code()))
+	buff := []byte(err.Code())
 	return ctx.SendPacket(
 		TypeRPC|RPCFlagResp|RPCFlagError,
 		cmd,
@@ -81,16 +79,21 @@ func (ctx *Context) Call(cmd string, reply Message, message Message) error {
 	}
 
 	// init channel before send packet
-	replyChan := make(chan []byte, 1)
+	replyChan := make(chan *Packet, 1)
 	// set replyChan for cmd | seq
 	ctx.replyChans[packet.Seq] = replyChan
 
 	// make sure that replyChan is released
 	defer delete(ctx.replyChans, packet.Seq)
 	select {
-	case rBuff := <-replyChan:
+	case rPacket := <-replyChan:
+		log.Println("reply buff", rPacket.MsgBuff)
+		if rPacket.Flag&RPCFlagError != 0 {
+			log.Println("reply error", string(rPacket.MsgBuff))
+			return newReplyError(string(rPacket.MsgBuff), rPacket)
+		}
 		if reply != nil {
-			return ctx.serializer.Unmarshal(rBuff, reply)
+			return ctx.serializer.Unmarshal(rPacket.MsgBuff, reply)
 		}
 		return nil
 	case <-time.After(ctx.timeout):
@@ -153,7 +156,7 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt)
 			return
 		}
-		replyChan <- pkt.MsgBuff
+		replyChan <- pkt
 		return
 	}
 	ctx.Packet = pkt

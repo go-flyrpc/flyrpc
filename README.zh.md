@@ -57,6 +57,9 @@ If HELO, it means Accept-Encoding and Accept-Serializer
 
 Up to 16 encoding and 16 serializer. (Who need 16 encoding and 16 serializer)
 
+### Buffer
+
+如果`Error`为`1`，`Buffer`为 `string`
 
 ## 服务器内部多路复用协议
 

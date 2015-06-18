@@ -142,7 +142,8 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			err := ve.Interface().(error)
 			if err != nil {
 				flyErr, ok := err.(Error)
-				if ok && flyErr.Code() < 20000 {
+				if ok {
+					log.Println("sending error", flyErr.Code())
 					// client error
 					return ctx.SendError(pkt.Cmd, pkt.Seq, flyErr)
 				}

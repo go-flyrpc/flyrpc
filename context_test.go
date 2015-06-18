@@ -46,7 +46,7 @@ func TestContextCall(t *testing.T) {
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
-	router.AddRoute("1", func(ctx *Context, in *TestUser) *TestUser {
+	router.AddRoute("hello", func(ctx *Context, in *TestUser) *TestUser {
 		return &TestUser{Id: in.Id + 1}
 	})
 	var reply = new(TestUser)
@@ -59,12 +59,12 @@ func TestContextCall(t *testing.T) {
 			}
 		}
 	}()
-	err := context.Call("1", reply, &TestUser{Id: 123})
+	err := context.Call("hello", reply, &TestUser{Id: 123})
 	assert.Nil(t, err)
 	assert.Equal(t, int32(124), reply.Id)
 
 	context.timeout = time.Millisecond
-	err = context.Call("1", reply, &TestUser{Id: 123})
+	err = context.Call("hello", reply, &TestUser{Id: 123})
 	assert.Error(t, err)
 	assert.Equal(t, ErrTimeOut, err.(Error).Code())
 }
@@ -74,7 +74,7 @@ func TestCallAck(t *testing.T) {
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
-	router.AddRoute("1", func(ctx *Context, in *TestUser) {
+	router.AddRoute("hello", func(ctx *Context, in *TestUser) {
 	})
 	go func() {
 		for {
@@ -86,8 +86,31 @@ func TestCallAck(t *testing.T) {
 		}
 	}()
 	context.timeout = 200 * time.Millisecond
-	err := context.Call("1", nil, &TestUser{Id: 123})
+	err := context.Call("hello", nil, &TestUser{Id: 123})
 	assert.NoError(t, err)
+}
+
+func TestCallReplyError(t *testing.T) {
+	protocol := NewMockDelayProtocol(time.Millisecond)
+	serializer := Protobuf
+	router := NewRouter(serializer)
+	context := NewContext(protocol, router, 0, serializer)
+	router.AddRoute("hello", func(ctx *Context, in *TestUser) error {
+		return NewFlyError("FOO")
+	})
+	go func() {
+		for {
+			pkt, err := protocol.ReadPacket()
+			context.emitPacket(pkt)
+			if err != nil {
+				break
+			}
+		}
+	}()
+	context.timeout = 200 * time.Millisecond
+	err := context.Call("hello", nil, &TestUser{Id: 123})
+	assert.Error(t, err)
+	assert.Equal(t, "FOO", err.Error())
 }
 
 func TestCallTimeout(t *testing.T) {
@@ -95,7 +118,7 @@ func TestCallTimeout(t *testing.T) {
 	serializer := Protobuf
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
-	router.AddRoute("1", func(ctx *Context, in *TestUser) *TestUser {
+	router.AddRoute("hello", func(ctx *Context, in *TestUser) *TestUser {
 		return &TestUser{Id: in.Id + 1}
 	})
 	var reply = new(TestUser)
@@ -109,7 +132,7 @@ func TestCallTimeout(t *testing.T) {
 		}
 	}()
 	context.timeout = 10 * time.Millisecond
-	err := context.Call("1", reply, &TestUser{Id: 123})
+	err := context.Call("hello", reply, &TestUser{Id: 123})
 	assert.Error(t, err)
 	assert.Equal(t, ErrTimeOut, err.(Error).Code())
 }
@@ -133,9 +156,7 @@ func TestPing(t *testing.T) {
 	err := context.Ping(0, 200*time.Millisecond)
 	assert.NoError(t, err)
 
-	/*
-		err = context.Ping(0, 10*time.Millisecond)
-		assert.Error(t, err)
-		assert.Equal(t, ErrTimeOut, err.(*flyError).Code)
-	*/
+	err = context.Ping(0, 10*time.Millisecond)
+	assert.Error(t, err)
+	assert.Equal(t, ErrTimeOut, err.(*flyError).Code())
 }

@@ -45,10 +45,10 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	// log.Println("Sending:", pk.ClientId, pk.Header, pk.MsgBuff)
 	if p.Writer == nil {
 		err := p.Close()
-		return NewFlyError(ErrWriterClosed, err)
+		return newFlyError(ErrWriterClosed, err)
 	}
 	if p.Writer.Available() == 0 {
-		return NewFlyError(ErrWriterClosed, nil)
+		return newError(ErrWriterClosed)
 	}
 	if p.IsMultiplex {
 		if err := binary.Write(p.Writer, binary.BigEndian, pk.ClientId); err != nil {
@@ -64,7 +64,7 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	// flag + trans-flag + seq + \n = 5 byte
 	pk.Length = TLength(5 + len(pk.MsgBuff) + len(pk.Cmd))
 	if pk.Length > MaxLength {
-		return NewFlyError(ErrBuffTooLong, nil)
+		return newError(ErrBuffTooLong)
 	}
 
 	// write Length

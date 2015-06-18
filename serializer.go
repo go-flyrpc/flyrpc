@@ -37,7 +37,7 @@ type _proto struct {
 func (p *_proto) Marshal(v Message) ([]byte, error) {
 	m, ok := v.(proto.Message)
 	if !ok {
-		return nil, NewFlyError(ErrNotProtoMessage, nil)
+		return nil, newError(ErrNotProtoMessage)
 	}
 	return proto.Marshal(m)
 }
@@ -46,7 +46,7 @@ func (p *_proto) Unmarshal(bytes []byte, v Message) error {
 
 	m, ok := v.(proto.Message)
 	if !ok {
-		return NewFlyError(ErrNotProtoMessage, nil)
+		return newError(ErrNotProtoMessage)
 	}
 	return proto.Unmarshal(bytes, m)
 }

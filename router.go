@@ -99,7 +99,7 @@ func (route *route) call(values []reflect.Value) (result []reflect.Value, err er
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = NewFlyError(ErrHandlerPanic)
+			err = newError(ErrHandlerPanic)
 			lines := strings.Split(string(debug.Stack()), "\n")
 			stack := strings.Join(lines[6:], "\n")
 			log.Printf("Handler panic: %s\n%s", r, stack)
@@ -130,7 +130,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	}
 	ret, err := route.call(values)
 	if err != nil {
-		return ctx.SendError(pkt.Cmd, pkt.Seq, err.(Error))
+		return ctx.SendError(pkt.Cmd, pkt.Seq, err)
 	}
 	// retSize := len(ret)
 	// if retSize != route.numOut {
@@ -141,13 +141,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		if !ve.IsNil() {
 			err := ve.Interface().(error)
 			if err != nil {
-				flyErr, ok := err.(Error)
-				if ok {
-					log.Println("sending error", flyErr.Code())
-					// client error
-					return ctx.SendError(pkt.Cmd, pkt.Seq, flyErr)
-				}
-				return err
+				return ctx.SendError(pkt.Cmd, pkt.Seq, err)
 			}
 		}
 	}
@@ -200,7 +194,7 @@ func (router *router) GetRoute(cmd string) Route {
 func (router *router) emitPacket(ctx *Context, p *Packet) error {
 	rt := router.GetRoute(p.Cmd)
 	if rt == nil {
-		return NewFlyError(ErrNotFound, nil)
+		return newError(ErrNotFound)
 	}
 	return rt.emitPacket(ctx, p)
 }

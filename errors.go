@@ -7,10 +7,7 @@ It support Call/Response  or Send/Receive pattern.
 */
 package flyrpc
 
-type Error interface {
-	Code() string
-	Error() string
-}
+import "errors"
 
 const (
 	// Common error
@@ -31,38 +28,30 @@ const (
 	ErrNotProtoMessage string = "NOT_PROTOBUF_MESSAGE"
 )
 
-type flyError struct {
-	code string
-	Err  error
-}
-
-func (f *flyError) Error() string {
-	return f.code
-}
-
-func (f *flyError) Code() string {
-	return f.code
-}
-
-func NewFlyError(code string, args ...error) *flyError {
-	var err error
-	if len(args) > 0 {
-		err = args[0]
-	}
-	return &flyError{
-		code: code,
-		Err:  err,
-	}
-}
-
 type ReplyError struct {
-	flyError
-	pkt *Packet
+	code  string
+	cause error
+	pkt   *Packet
+}
+
+func (e *ReplyError) Error() string {
+	return e.code
 }
 
 func newReplyError(code string, pkt *Packet) *ReplyError {
 	return &ReplyError{
-		flyError: flyError{code: code},
-		pkt:      pkt,
+		code: code,
+		pkt:  pkt,
+	}
+}
+
+func newError(code string) error {
+	return errors.New(code)
+}
+
+func newFlyError(code string, cause error) error {
+	return &ReplyError{
+		code:  code,
+		cause: cause,
 	}
 }

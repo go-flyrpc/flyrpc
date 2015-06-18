@@ -66,7 +66,7 @@ func TestContextCall(t *testing.T) {
 	context.timeout = time.Millisecond
 	err = context.Call("hello", reply, &TestUser{Id: 123})
 	assert.Error(t, err)
-	assert.Equal(t, ErrTimeOut, err.(Error).Code())
+	assert.Equal(t, ErrTimeOut, err.Error())
 }
 
 func TestCallAck(t *testing.T) {
@@ -96,7 +96,7 @@ func TestCallReplyError(t *testing.T) {
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	router.AddRoute("hello", func(ctx *Context, in *TestUser) error {
-		return NewFlyError("FOO")
+		return newError("FOO")
 	})
 	go func() {
 		for {
@@ -134,7 +134,7 @@ func TestCallTimeout(t *testing.T) {
 	context.timeout = 10 * time.Millisecond
 	err := context.Call("hello", reply, &TestUser{Id: 123})
 	assert.Error(t, err)
-	assert.Equal(t, ErrTimeOut, err.(Error).Code())
+	assert.Equal(t, ErrTimeOut, err.Error())
 }
 
 func TestPing(t *testing.T) {
@@ -158,5 +158,5 @@ func TestPing(t *testing.T) {
 
 	err = context.Ping(0, 10*time.Millisecond)
 	assert.Error(t, err)
-	assert.Equal(t, ErrTimeOut, err.(*flyError).Code())
+	assert.Equal(t, ErrTimeOut, err.Error())
 }

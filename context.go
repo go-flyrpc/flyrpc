@@ -42,8 +42,8 @@ func (ctx *Context) SendPacket(flag byte, cmd string, seq TSeq, buff []byte) err
 	})
 }
 
-func (ctx *Context) SendError(cmd string, seq TSeq, err Error) error {
-	buff := []byte(err.Code())
+func (ctx *Context) SendError(cmd string, seq TSeq, err error) error {
+	buff := []byte(err.Error())
 	return ctx.SendPacket(
 		TypeRPC|RPCFlagResp|RPCFlagError,
 		cmd,
@@ -97,7 +97,7 @@ func (ctx *Context) Call(cmd string, reply Message, message Message) error {
 		}
 		return nil
 	case <-time.After(ctx.timeout):
-		return NewFlyError(ErrTimeOut)
+		return newError(ErrTimeOut)
 	}
 }
 
@@ -132,7 +132,7 @@ func (ctx *Context) Ping(length TLength, timeout time.Duration) error {
 	select {
 	case <-pingChan:
 	case <-time.After(timeout):
-		return NewFlyError(ErrTimeOut)
+		return newError(ErrTimeOut)
 	}
 	return nil
 }

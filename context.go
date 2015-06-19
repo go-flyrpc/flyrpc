@@ -19,6 +19,8 @@ type Context struct {
 	replyChans map[int]chan []byte
 	pingChans  map[TSeq]chan []byte
 	timeout    time.Duration
+	// close handler
+	closeHandler func(*Context)
 }
 
 func NewContext(protocol Protocol, router Router, clientId int, serializer Serializer) *Context {
@@ -185,4 +187,14 @@ func (ctx *Context) getNextSeq() TSeq {
 
 func (ctx *Context) getChanId(header *Header) int {
 	return int(header.Cmd)<<16 | int(header.Seq)
+}
+
+func (ctx *Context) OnClose(handler func(*Context)) {
+	ctx.closeHandler = handler
+}
+
+func (ctx *Context) Close() {
+	if ctx.closeHandler != nil {
+		ctx.closeHandler(ctx)
+	}
 }

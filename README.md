@@ -26,6 +26,16 @@ FlyRPC high speed flexible network framework.
 | Helo    | 0 | 1 | ? | ? | ? | ? | ? | ? |
 | MQ      | 0 | 0 | ? | ? | ? | ? | ? | ? |
 
+### Buffer
+
+If `Error` flag is `1`, buffer is `string`, it is the error code.
+
+If `Error` flag is `0`, buffer is the serialized bytes wanted type.
+
+Support `[]byte` `string` `struct` `map`
+
+Not support yet `int` `float`
+
 ## Internal Multiplexed Protocol
 
 | Client count  | Client Id 1   | ...  | Client Id n | Buffer Length | Buffer |

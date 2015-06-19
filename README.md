@@ -61,7 +61,11 @@ Up to 16 encoding and 16 serializer. (Who need 16 encoding and 16 serializer)
 
 If `Error` flag is `1`, buffer is `string`, it is the error code.
 
-If `Error` flag is `0`, buffer is the serialized bytes.
+If `Error` flag is `0`, buffer is the serialized bytes wanted type.
+
+Support `[]byte` `string` `struct` `map`
+
+Not support yet `int` `float`
 
 ## Internal Multiplexed Protocol
 

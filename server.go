@@ -176,6 +176,9 @@ func (t *transport) removeClient(clientId int) *Context {
 	// TODO remove clientId from clientIds
 	// remove context from server.contextMap
 	context := t.server.contextMap[clientId]
+	if context != nil {
+		context.Close()
+	}
 	delete(t.server.contextMap, clientId)
 	return context
 }

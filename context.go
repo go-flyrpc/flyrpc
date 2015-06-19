@@ -18,6 +18,8 @@ type Context struct {
 	replyChans map[TSeq]chan *Packet
 	pingChans  map[TSeq]chan []byte
 	timeout    time.Duration
+	// close handler
+	closeHandler func(*Context)
 }
 
 func NewContext(protocol Protocol, router Router, clientId int, serializer Serializer) *Context {
@@ -179,4 +181,14 @@ func (ctx *Context) emitPingPacket(pkt *Packet) {
 func (ctx *Context) getNextSeq() TSeq {
 	ctx.nextSeq++
 	return ctx.nextSeq
+}
+
+func (ctx *Context) OnClose(handler func(*Context)) {
+	ctx.closeHandler = handler
+}
+
+func (ctx *Context) Close() {
+	if ctx.closeHandler != nil {
+		ctx.closeHandler(ctx)
+	}
 }

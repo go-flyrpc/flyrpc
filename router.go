@@ -47,6 +47,7 @@ var (
 	typeError   = reflect.TypeOf(&_err).Elem()
 	typeContext = reflect.TypeOf(&Context{})
 	typeBytes   = reflect.TypeOf([]byte{})
+	typeString  = reflect.TypeOf("")
 	typePacket  = reflect.TypeOf(&Packet{})
 )
 
@@ -119,6 +120,8 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			values[i] = reflect.ValueOf(pkt.MsgBuff)
 		} else if inType == typePacket {
 			values[i] = reflect.ValueOf(pkt)
+		} else if inType == typeString {
+			values[i] = reflect.ValueOf(string(pkt.MsgBuff))
 		} else {
 			v := reflect.New(inType.Elem())
 			err := route.serializer.Unmarshal(pkt.MsgBuff, v.Interface())
@@ -150,11 +153,18 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		return nil
 	}
 	if route.outType != nil {
+		var bytes []byte
+		vout := ret[0].Interface()
 		// rpc return
-		vout := ret[0]
-		bytes, err := route.serializer.Marshal(vout.Interface())
-		if err != nil {
-			return err
+		if route.outType == typeBytes {
+			bytes = vout.([]byte)
+		} else if route.outType == typeString {
+			bytes = []byte(vout.(string))
+		} else {
+			bytes, err = route.serializer.Marshal(vout)
+			if err != nil {
+				return err
+			}
 		}
 		return ctx.SendPacket(
 			TypeRPC|RPCFlagResp,

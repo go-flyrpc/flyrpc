@@ -144,7 +144,7 @@ func (t *transport) handlePackets() {
 			t.Close()
 			break
 		}
-		t.emitPacket(packet)
+		go t.emitPacket(packet)
 	}
 }
 

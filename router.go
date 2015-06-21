@@ -46,8 +46,6 @@ var (
 	_err        error
 	typeError   = reflect.TypeOf(&_err).Elem()
 	typeContext = reflect.TypeOf(&Context{})
-	typeBytes   = reflect.TypeOf([]byte{})
-	typeString  = reflect.TypeOf("")
 	typePacket  = reflect.TypeOf(&Packet{})
 )
 
@@ -116,10 +114,10 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		inType := route.inTypes[i]
 		if inType == typeContext {
 			values[i] = reflect.ValueOf(ctx)
-		} else if inType == typeBytes {
-			values[i] = reflect.ValueOf(pkt.MsgBuff)
 		} else if inType == typePacket {
 			values[i] = reflect.ValueOf(pkt)
+		} else if inType == typeBytes {
+			values[i] = reflect.ValueOf(pkt.MsgBuff)
 		} else if inType == typeString {
 			values[i] = reflect.ValueOf(string(pkt.MsgBuff))
 		} else {

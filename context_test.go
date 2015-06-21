@@ -113,6 +113,29 @@ func TestCallReplyError(t *testing.T) {
 	assert.Equal(t, "FOO", err.Error())
 }
 
+func TestCallReplyString(t *testing.T) {
+	protocol := NewMockDelayProtocol(time.Millisecond)
+	serializer := Protobuf
+	router := NewRouter(serializer)
+	context := NewContext(protocol, router, 0, serializer)
+	router.AddRoute("hello", func(ctx *Context, name string) (string, error) {
+		return "name:" + name, nil
+	})
+	go func() {
+		for {
+			pkt, err := protocol.ReadPacket()
+			context.emitPacket(pkt)
+			if err != nil {
+				break
+			}
+		}
+	}()
+	context.timeout = 200 * time.Millisecond
+	bytes, err := context.GetReply("hello", "world")
+	assert.NoError(t, err)
+	assert.Equal(t, "name:world", string(bytes))
+}
+
 func TestCallTimeout(t *testing.T) {
 	protocol := NewMockDelayProtocol(time.Second)
 	serializer := Protobuf

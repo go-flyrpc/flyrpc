@@ -62,11 +62,12 @@ func (ctx *Context) SendMessage(cmd string, message Message) error {
 	return ctx.SendPacket(TypeRPC, cmd, ctx.getNextSeq(), buff)
 }
 
-func (ctx *Context) Call(cmd string, reply Message, message Message) error {
+func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
 	log.Println(ctx.ClientId, "Call", cmd, message)
-	buff, err := ctx.serializer.Marshal(message)
+
+	buff, err := MessageToBytes(message, ctx.serializer)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	packet := &Packet{
 		Flag:    TypeRPC | RPCFlagReq,
@@ -77,7 +78,7 @@ func (ctx *Context) Call(cmd string, reply Message, message Message) error {
 
 	// Send Packet
 	if err := ctx.Protocol.SendPacket(packet); err != nil {
-		return err
+		return nil, err
 	}
 
 	// init channel before send packet
@@ -92,15 +93,24 @@ func (ctx *Context) Call(cmd string, reply Message, message Message) error {
 		log.Println("reply buff", rPacket.MsgBuff)
 		if rPacket.Flag&RPCFlagError != 0 {
 			log.Println("reply error", string(rPacket.MsgBuff))
-			return newReplyError(string(rPacket.MsgBuff), rPacket)
+			return nil, newReplyError(string(rPacket.MsgBuff), rPacket)
 		}
-		if reply != nil {
-			return ctx.serializer.Unmarshal(rPacket.MsgBuff, reply)
-		}
-		return nil
+		return rPacket.MsgBuff, nil
+
 	case <-time.After(ctx.timeout):
-		return newError(ErrTimeOut)
+		return nil, newError(ErrTimeOut)
 	}
+}
+
+func (ctx *Context) Call(cmd string, reply Message, message Message) error {
+	bytes, err := ctx.GetReply(cmd, message)
+	if err != nil {
+		return err
+	}
+	if reply != nil {
+		ctx.serializer.Unmarshal(bytes, reply)
+	}
+	return nil
 }
 
 func (ctx *Context) sendPingPacket(pingFlag byte, seq TSeq, bytes []byte) error {
@@ -162,7 +172,7 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 		return
 	}
 	ctx.Packet = pkt
-	log.Println(ctx.ClientId, "OnMessage", pkt.Cmd)
+	log.Println(ctx.ClientId, "OnMessage", pkt.Cmd, pkt.Flag, pkt.MsgBuff)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
 		log.Println(ctx.ClientId, "Error to call packet", err)
 	}

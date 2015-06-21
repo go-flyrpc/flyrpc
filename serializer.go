@@ -2,12 +2,31 @@ package flyrpc
 
 import (
 	"encoding/json"
+	"log"
+	"reflect"
 
 	"github.com/golang/protobuf/proto"
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 type Message interface{}
+
+var (
+	typeBytes  = reflect.TypeOf([]byte{})
+	typeString = reflect.TypeOf("")
+)
+
+func MessageToBytes(message Message, serializer Serializer) ([]byte, error) {
+	messageType := reflect.TypeOf(message)
+	log.Println("messageType", messageType)
+	if messageType == typeBytes {
+		return message.([]byte), nil
+	}
+	if messageType == typeString {
+		return []byte(message.(string)), nil
+	}
+	return serializer.Marshal(message)
+}
 
 type Serializer interface {
 	Marshal(Message) ([]byte, error)
@@ -43,7 +62,6 @@ func (p *_proto) Marshal(v Message) ([]byte, error) {
 }
 
 func (p *_proto) Unmarshal(bytes []byte, v Message) error {
-
 	m, ok := v.(proto.Message)
 	if !ok {
 		return newError(ErrNotProtoMessage)

@@ -8,6 +8,7 @@ import (
 
 type Context struct {
 	Protocol Protocol
+	Tag      string
 	ClientId int
 	Session  interface{}
 	Packet   *Packet
@@ -67,7 +68,7 @@ func (ctx *Context) SendMessage(cmd TCmd, message Message) error {
 }
 
 func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
-	log.Println(ctx.ClientId, "Call", cmd, message)
+	log.Println(ctx.Tag, "Call", cmd, message)
 	buff, err := ctx.serializer.Marshal(message)
 	if err != nil {
 		return err
@@ -148,7 +149,7 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 	case TypePing:
 		ctx.emitPingPacket(pkt)
 	default:
-		log.Println("Unsupported subType", subType)
+		log.Println(ctx.Tag, "Unsupported subType", subType)
 	}
 }
 
@@ -157,25 +158,25 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {
-			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt.Header, chanId)
+			log.Println(ctx.Tag, "No channel found, pkt is :", pkt.Header, chanId)
 			return
 		}
 		replyChan <- pkt.MsgBuff
 		return
 	}
 	ctx.Packet = pkt
-	log.Println(ctx.ClientId, "OnMessage", pkt.Header.Cmd)
+	log.Println(ctx.Tag, "OnMessage", pkt.Header.Cmd)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
-		log.Println(ctx.ClientId, "Error to call packet", err)
+		log.Println(ctx.Tag, "Error to call packet", pkt.Header.Cmd, pkt.MsgBuff, err)
 	}
 }
 
 func (ctx *Context) emitPingPacket(pkt *Packet) {
 	if pkt.Header.Flag&PingFlagPing != 0 {
-		log.Println(ctx.ClientId, "sendPong")
+		log.Println(ctx.Tag, "sendPong")
 		ctx.sendPong(pkt)
 	} else if pkt.Header.Flag&PingFlagPong != 0 {
-		log.Println(ctx.ClientId, "recvPong")
+		log.Println(ctx.Tag, "recvPong")
 		ctx.pingChans[pkt.Header.Seq] <- pkt.MsgBuff
 	}
 }

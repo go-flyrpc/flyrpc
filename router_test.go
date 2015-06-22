@@ -89,8 +89,7 @@ func TestRouter(t *testing.T) {
 		Cmd:      "100",
 		MsgBuff:  buff,
 	})
-	assert.NotNil(t, err)
-	assert.Equal(t, ErrNotFound, err.Error())
+	assert.Nil(t, err)
 }
 
 func TestRouterPanic(t *testing.T) {

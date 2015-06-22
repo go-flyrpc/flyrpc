@@ -202,7 +202,8 @@ func (router *router) GetRoute(cmd string) Route {
 func (router *router) emitPacket(ctx *Context, p *Packet) error {
 	rt := router.GetRoute(p.Cmd)
 	if rt == nil {
-		return newError(ErrNotFound)
+		log.Println("Command", p.Cmd, "not found")
+		return ctx.SendError(p.Cmd, p.Seq, newError(ErrNotFound))
 	}
 	return rt.emitPacket(ctx, p)
 }

@@ -7,6 +7,7 @@ import (
 
 type Context struct {
 	Protocol Protocol
+	Tag      string
 	ClientId int
 	Session  interface{}
 	Packet   *Packet
@@ -63,7 +64,7 @@ func (ctx *Context) SendMessage(cmd string, message Message) error {
 }
 
 func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
-	log.Println(ctx.ClientId, "Call", cmd, message)
+	log.Println(ctx.Tag, "Call", cmd, message)
 
 	buff, err := MessageToBytes(message, ctx.serializer)
 	if err != nil {
@@ -165,25 +166,25 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 	if pkt.Flag&RPCFlagResp != 0 {
 		replyChan := ctx.replyChans[pkt.Seq]
 		if replyChan == nil {
-			log.Println(ctx.ClientId, "No channel found, pkt is :", pkt)
+			log.Println(ctx.Tag, "No channel found, pkt is :", pkt)
 			return
 		}
 		replyChan <- pkt
 		return
 	}
 	ctx.Packet = pkt
-	log.Println(ctx.ClientId, "OnMessage", pkt.Cmd, pkt.Flag, pkt.MsgBuff)
+	log.Println(ctx.Tag, "OnMessage", pkt.Cmd, pkt.Flag, pkt.MsgBuff)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
-		log.Println(ctx.ClientId, "Error to call packet", err)
+		log.Println(ctx.Tag, "Error to call packet", err)
 	}
 }
 
 func (ctx *Context) emitPingPacket(pkt *Packet) {
 	if pkt.Flag&PingFlagPing != 0 {
-		log.Println(ctx.ClientId, "sendPong")
+		log.Println(ctx.Tag, "sendPong")
 		ctx.sendPong(pkt)
 	} else if pkt.Flag&PingFlagPong != 0 {
-		log.Println(ctx.ClientId, "recvPong")
+		log.Println(ctx.Tag, "recvPong")
 		ctx.pingChans[pkt.Seq] <- pkt.MsgBuff
 	}
 }

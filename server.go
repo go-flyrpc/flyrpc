@@ -81,8 +81,8 @@ func (s *Server) SendMessage(clientId int, cmd string, v Message) error {
 	return s.GetContext(clientId).SendMessage(cmd, v)
 }
 
-func (s *Server) Listen(addr string) error {
-	listener, err := net.Listen("tcp", addr)
+func (s *Server) Listen(network, addr string) error {
+	listener, err := net.Listen(network, addr)
 	if err != nil {
 		return err
 	}

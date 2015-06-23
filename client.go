@@ -18,7 +18,7 @@ func Dial(network, address string) (*Client, error) {
 		return nil, err
 	}
 	var protocol Protocol
-	if network == "tcp" {
+	if network == "tcp" || network == "unix" {
 		protocol = NewTcpProtocol(conn, false)
 	} else {
 		return nil, newError("not support protocol " + network)

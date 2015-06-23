@@ -25,7 +25,7 @@ func TestServerMultiConnect(t *testing.T) {
 		ctx.SendMessage("1", &TestUser{Id: 123})
 	})
 	go func() {
-		err := server.Listen("127.0.0.1:15555")
+		err := server.Listen("tcp", "127.0.0.1:15555")
 		assert.Nil(t, err)
 	}()
 	<-time.After(10 * time.Millisecond)
@@ -58,7 +58,7 @@ func TestServerHandlePacket(t *testing.T) {
 		wg.Done()
 	})
 	go func() {
-		err := server.Listen("127.0.0.1:15556")
+		err := server.Listen("tcp", "127.0.0.1:15556")
 		assert.Nil(t, err)
 	}()
 	<-time.After(10 * time.Millisecond)

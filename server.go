@@ -185,7 +185,7 @@ func (t *transport) removeClient(clientId int) *Context {
 
 func (t *transport) Close() error {
 	// remove all clients
-	for id := range t.clientIds {
+	for _, id := range t.clientIds {
 		t.removeClient(id)
 	}
 	t.clientIds = nil

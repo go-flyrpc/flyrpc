@@ -1,6 +1,7 @@
 package flyrpc
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"runtime/debug"
@@ -100,8 +101,8 @@ func (route *route) call(values []reflect.Value) (result []reflect.Value, err er
 		if r != nil {
 			err = newError(ErrHandlerPanic)
 			lines := strings.Split(string(debug.Stack()), "\n")
-			stack := strings.Join(lines[6:], "\n")
-			log.Printf("Handler panic: %s\n%s", r, stack)
+			stack := strings.Join(lines[5:], "\n")
+			fmt.Printf("Error: %s\n%s", r, stack)
 		}
 	}()
 	result = route.vHandler.Call(values)

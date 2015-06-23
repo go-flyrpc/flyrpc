@@ -220,6 +220,7 @@ func (ctx *Context) OnClose(handler func(*Context)) {
 }
 
 func (ctx *Context) Close() {
+	ctx.debug("closing")
 	if ctx.closeHandler != nil {
 		ctx.closeHandler(ctx)
 	}

@@ -69,5 +69,6 @@ func (c *Client) OnMessage(cmd string, handler HandlerFunc) {
 }
 
 func (c *Client) Close() error {
+	c.Context.Close()
 	return c.Protocol.Close()
 }

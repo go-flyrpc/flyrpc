@@ -2,7 +2,6 @@ package flyrpc
 
 import (
 	"encoding/json"
-	"log"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -18,7 +17,6 @@ var (
 
 func MessageToBytes(message Message, serializer Serializer) ([]byte, error) {
 	messageType := reflect.TypeOf(message)
-	log.Println("messageType", messageType)
 	if messageType == typeBytes {
 		return message.([]byte), nil
 	}

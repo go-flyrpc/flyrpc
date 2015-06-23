@@ -7,6 +7,7 @@ import (
 
 type Context struct {
 	Protocol Protocol
+	Debug    bool
 	Tag      string
 	ClientId int
 	Session  interface{}
@@ -32,6 +33,15 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 		replyChans: make(map[TSeq]chan *Packet),
 		pingChans:  make(map[TSeq]chan []byte),
 		timeout:    10 * time.Second,
+	}
+}
+
+func (ctx *Context) debug(args ...interface{}) {
+	if ctx.Debug {
+		if ctx.Tag != "" {
+			args = append([]interface{}{"[" + ctx.Tag + "]"}, args...)
+		}
+		log.Println(args...)
 	}
 }
 
@@ -64,7 +74,7 @@ func (ctx *Context) SendMessage(cmd string, message Message) error {
 }
 
 func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
-	log.Println(ctx.Tag, "Call", cmd, message)
+	ctx.debug("Call", cmd, message)
 
 	buff, err := MessageToBytes(message, ctx.serializer)
 	if err != nil {
@@ -91,9 +101,9 @@ func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
 	defer delete(ctx.replyChans, packet.Seq)
 	select {
 	case rPacket := <-replyChan:
-		log.Println("reply buff", rPacket.MsgBuff)
+		ctx.debug("reply buff", rPacket.MsgBuff)
 		if rPacket.Flag&RPCFlagError != 0 {
-			log.Println("reply error", string(rPacket.MsgBuff))
+			ctx.debug("reply error", string(rPacket.MsgBuff))
 			return nil, newReplyError(string(rPacket.MsgBuff), rPacket)
 		}
 		return rPacket.MsgBuff, nil
@@ -166,25 +176,25 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 	if pkt.Flag&RPCFlagResp != 0 {
 		replyChan := ctx.replyChans[pkt.Seq]
 		if replyChan == nil {
-			log.Println(ctx.Tag, "No channel found, pkt is :", pkt)
+			ctx.debug("No channel found, pkt is :", pkt)
 			return
 		}
 		replyChan <- pkt
 		return
 	}
 	ctx.Packet = pkt
-	log.Println(ctx.Tag, "OnMessage", pkt.Cmd, pkt.Flag, pkt.MsgBuff)
+	ctx.debug("OnMessage", pkt.Cmd, pkt.Flag, pkt.MsgBuff)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
-		log.Println(ctx.Tag, "Error to call packet", err)
+		ctx.debug("Error to call packet", err)
 	}
 }
 
 func (ctx *Context) emitPingPacket(pkt *Packet) {
 	if pkt.Flag&PingFlagPing != 0 {
-		log.Println(ctx.Tag, "sendPong")
+		ctx.debug("sendPong")
 		ctx.sendPong(pkt)
 	} else if pkt.Flag&PingFlagPong != 0 {
-		log.Println(ctx.Tag, "recvPong")
+		ctx.debug("recvPong")
 		ctx.pingChans[pkt.Seq] <- pkt.MsgBuff
 	}
 }

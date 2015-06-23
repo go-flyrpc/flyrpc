@@ -33,6 +33,7 @@ func NewClient(conn net.Conn, serializer Serializer) *Client {
 func (c *Client) handlePackets() {
 	for {
 		packet, err := c.Protocol.ReadPacket()
+		c.debug("ReadPacket", packet)
 		if err != nil {
 			if err != io.EOF {
 				log.Println("Close on error", err)

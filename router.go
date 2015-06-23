@@ -145,7 +145,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			err := ve.Interface().(error)
 			if err != nil {
 				flyErr, ok := err.(Error)
-				if ok && flyErr.Code() < 20000 {
+				if ok {
 					// client error
 					return ctx.SendError(pkt.Header.Cmd, pkt.Header.Seq, flyErr)
 				}
@@ -209,7 +209,9 @@ func (router *router) GetRoute(cmd TCmd) Route {
 func (router *router) emitPacket(ctx *Context, p *Packet) error {
 	rt := router.GetRoute(p.Header.Cmd)
 	if rt == nil {
-		return NewFlyError(ErrNotFound, nil)
+		err := NewFlyError(ErrNotFound, nil)
+		ctx.SendError(p.Header.Cmd, p.Header.Seq, err)
+		return err
 	}
 	return rt.emitPacket(ctx, p)
 }

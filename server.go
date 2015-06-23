@@ -106,7 +106,7 @@ func (s *Server) handleConnections() {
 			log.Println("Accept error", err)
 			break
 		} else {
-			log.Println("New Connection", conn.RemoteAddr())
+			// log.Println("New Connection", conn.RemoteAddr())
 		}
 		s.transports = append(s.transports, newTransport(conn, s))
 	}
@@ -139,7 +139,7 @@ func (t *transport) handlePackets() {
 		packet, err := t.protocol.ReadPacket()
 		if err != nil {
 			if err != io.EOF {
-				log.Println("Close on error", err)
+				// log.Println("Close on error", err)
 			}
 			t.Close()
 			break

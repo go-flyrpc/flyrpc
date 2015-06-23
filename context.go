@@ -7,6 +7,7 @@ import (
 )
 
 type Context struct {
+	Debug    bool
 	Protocol Protocol
 	Tag      string
 	ClientId int
@@ -17,7 +18,7 @@ type Context struct {
 	serializer Serializer
 	nextSeq    TSeq
 	pingSeq    TSeq
-	replyChans map[int]chan []byte
+	replyChans map[int]chan *Packet
 	pingChans  map[TSeq]chan []byte
 	timeout    time.Duration
 	// close handler
@@ -30,13 +31,21 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 		Router:     router,
 		ClientId:   clientId,
 		serializer: serializer,
-		replyChans: make(map[int]chan []byte),
+		replyChans: make(map[int]chan *Packet),
 		pingChans:  make(map[TSeq]chan []byte),
 		timeout:    10 * time.Second,
 	}
 }
 
+func (ctx *Context) debug(args ...interface{}) {
+	if ctx.Debug {
+		args2 := append([]interface{}{"[" + ctx.Tag + "]"}, args...)
+		log.Println(args2...)
+	}
+}
+
 func (ctx *Context) SendPacket(flag byte, cmd TCmd, seq TSeq, buff []byte) error {
+	ctx.debug("SendPacket", flag, cmd, seq, buff)
 	return ctx.Protocol.SendPacket(&Packet{
 		ClientId: ctx.ClientId,
 		Header: &Header{
@@ -51,6 +60,7 @@ func (ctx *Context) SendPacket(flag byte, cmd TCmd, seq TSeq, buff []byte) error
 func (ctx *Context) SendError(cmd TCmd, seq TSeq, err Error) error {
 	buff := make([]byte, 4)
 	binary.BigEndian.PutUint32(buff, uint32(err.Code()))
+	ctx.debug("SendError", cmd, seq, err, buff)
 	return ctx.SendPacket(
 		TypeRPC|RPCFlagResp|RPCFlagError,
 		cmd,
@@ -68,7 +78,7 @@ func (ctx *Context) SendMessage(cmd TCmd, message Message) error {
 }
 
 func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
-	log.Println(ctx.Tag, "Call", cmd, message)
+	ctx.debug("Call", cmd, message)
 	buff, err := ctx.serializer.Marshal(message)
 	if err != nil {
 		return err
@@ -85,7 +95,7 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	}
 
 	// init channel before send packet
-	replyChan := make(chan []byte, 1)
+	replyChan := make(chan *Packet, 1)
 	// set replyChan for cmd | seq
 	chanId := ctx.getChanId(header)
 	ctx.replyChans[chanId] = replyChan
@@ -93,9 +103,13 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	// make sure that replyChan is released
 	defer delete(ctx.replyChans, chanId)
 	select {
-	case rBuff := <-replyChan:
+	case rPkt := <-replyChan:
+		if (rPkt.Header.Flag & RPCFlagError) != 0 {
+			log.Println("on error", rPkt.MsgBuff)
+			return NewFlyError(int(binary.BigEndian.Uint32(rPkt.MsgBuff)))
+		}
 		if reply != nil {
-			return ctx.serializer.Unmarshal(rBuff, reply)
+			return ctx.serializer.Unmarshal(rPkt.MsgBuff, reply)
 		}
 		return nil
 	case <-time.After(ctx.timeout):
@@ -149,7 +163,7 @@ func (ctx *Context) emitPacket(pkt *Packet) {
 	case TypePing:
 		ctx.emitPingPacket(pkt)
 	default:
-		log.Println(ctx.Tag, "Unsupported subType", subType)
+		ctx.debug("Unsupported subType", subType)
 	}
 }
 
@@ -158,25 +172,25 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 		chanId := ctx.getChanId(pkt.Header)
 		replyChan := ctx.replyChans[chanId]
 		if replyChan == nil {
-			log.Println(ctx.Tag, "No channel found, pkt is :", pkt.Header, chanId)
+			ctx.debug("No channel found, pkt is :", pkt.Header, chanId)
 			return
 		}
-		replyChan <- pkt.MsgBuff
+		replyChan <- pkt
 		return
 	}
 	ctx.Packet = pkt
-	log.Println(ctx.Tag, "OnMessage", pkt.Header.Cmd)
+	ctx.debug("OnMessage", pkt.Header.Cmd)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
-		log.Println(ctx.Tag, "Error to call packet", pkt.Header.Cmd, pkt.MsgBuff, err)
+		ctx.debug("Error to call packet", pkt.Header.Cmd, pkt.MsgBuff, err)
 	}
 }
 
 func (ctx *Context) emitPingPacket(pkt *Packet) {
 	if pkt.Header.Flag&PingFlagPing != 0 {
-		log.Println(ctx.Tag, "sendPong")
+		ctx.debug("sendPong")
 		ctx.sendPong(pkt)
 	} else if pkt.Header.Flag&PingFlagPong != 0 {
-		log.Println(ctx.Tag, "recvPong")
+		ctx.debug("recvPong")
 		ctx.pingChans[pkt.Header.Seq] <- pkt.MsgBuff
 	}
 }

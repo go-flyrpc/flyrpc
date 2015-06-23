@@ -10,24 +10,44 @@ import (
 type Client struct {
 	// extend with *Context
 	*Context
-	Protocol   Protocol
-	Router     Router
-	serializer Serializer
+}
+
+func Dial(network, address string) (*Client, error) {
+	conn, err := net.Dial(network, address)
+	if err != nil {
+		return nil, err
+	}
+	var protocol Protocol
+	if network == "tcp" {
+		protocol = NewTcpProtocol(conn, false)
+	} else {
+		return nil, newError("not support protocol " + network)
+	}
+	return newClient(protocol, nil), nil
+}
+
+func newTcpClient(conn net.Conn, serializer Serializer) *Client {
+	protocol := NewTcpProtocol(conn, false)
+	return newClient(protocol, serializer)
 }
 
 // Create new Client instance.
-func NewClient(conn net.Conn, serializer Serializer) *Client {
-	protocol := NewTcpProtocol(conn, false)
+func newClient(protocol Protocol, serializer Serializer) *Client {
+	if serializer == nil {
+		serializer = JSON
+	}
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 99, serializer)
 	cli := &Client{
 		context,
-		protocol,
-		router,
-		serializer,
 	}
 	go cli.handlePackets()
 	return cli
+}
+
+func (c *Client) SetSerializer(serializer Serializer) {
+	c.serializer = serializer
+	c.Router.(*router).serializer = serializer
 }
 
 func (c *Client) handlePackets() {
@@ -40,7 +60,7 @@ func (c *Client) handlePackets() {
 			c.Close()
 			break
 		}
-		go c.Context.emitPacket(packet)
+		go c.emitPacket(packet)
 	}
 }
 

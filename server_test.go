@@ -1,7 +1,6 @@
 package flyrpc
 
 import (
-	"net"
 	"sync"
 	"testing"
 	"time"
@@ -10,13 +9,11 @@ import (
 )
 
 func makeClient(t *testing.T, addr string) *Client {
-	conn, err := net.Dial("tcp", addr)
+	client, err := Dial("tcp", addr)
 	assert.NoError(t, err)
-	assert.NotNil(t, conn)
-	if conn != nil {
-		return NewClient(conn, Protobuf)
-	}
-	return nil
+	assert.NotNil(t, client)
+	client.SetSerializer(Protobuf)
+	return client
 }
 
 func TestServerMultiConnect(t *testing.T) {

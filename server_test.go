@@ -83,7 +83,7 @@ func TestServer(t *testing.T) {
 		log.Println("server on", in)
 		// call client cmd 2 and response another user
 		log.Println("server call 2")
-		err := ctx.Call(12, reply, in)
+		err := ctx.Call(12, in, reply)
 		assert.Nil(t, err)
 		log.Println("client response", reply)
 		reply.Id += 10
@@ -119,7 +119,7 @@ func testClient(t *testing.T, wg *sync.WaitGroup, i int) {
 	reply := new(TestUser)
 	client.OnMessage(11, func(ctx *Context, in *TestUser) {
 		log.Println("client call 1")
-		err = client.Call(21, reply, &TestUser{Id: 100})
+		err = client.Call(21, &TestUser{Id: 100}, reply)
 		assert.Nil(t, err)
 		log.Println("server response", reply)
 		assert.Equal(t, 111, reply.Id)

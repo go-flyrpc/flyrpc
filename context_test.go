@@ -59,12 +59,12 @@ func TestContextCall(t *testing.T) {
 			}
 		}
 	}()
-	err := context.Call("hello", reply, &TestUser{Id: 123})
+	err := context.Call("hello", &TestUser{Id: 123}, reply)
 	assert.Nil(t, err)
 	assert.Equal(t, int32(124), reply.Id)
 
 	context.timeout = time.Millisecond
-	err = context.Call("hello", reply, &TestUser{Id: 123})
+	err = context.Call("hello", &TestUser{Id: 123}, reply)
 	assert.Error(t, err)
 	assert.Equal(t, ErrTimeOut, err.Error())
 }
@@ -86,7 +86,7 @@ func TestCallAck(t *testing.T) {
 		}
 	}()
 	context.timeout = 200 * time.Millisecond
-	err := context.Call("hello", nil, &TestUser{Id: 123})
+	err := context.Call("hello", &TestUser{Id: 123}, nil)
 	assert.NoError(t, err)
 }
 
@@ -108,7 +108,7 @@ func TestCallReplyError(t *testing.T) {
 		}
 	}()
 	context.timeout = 200 * time.Millisecond
-	err := context.Call("hello", nil, &TestUser{Id: 123})
+	err := context.Call("hello", &TestUser{Id: 123}, nil)
 	assert.Error(t, err)
 	assert.Equal(t, "FOO", err.Error())
 }
@@ -155,7 +155,7 @@ func TestCallTimeout(t *testing.T) {
 		}
 	}()
 	context.timeout = 10 * time.Millisecond
-	err := context.Call("hello", reply, &TestUser{Id: 123})
+	err := context.Call("hello", &TestUser{Id: 123}, reply)
 	assert.Error(t, err)
 	assert.Equal(t, ErrTimeOut, err.Error())
 }

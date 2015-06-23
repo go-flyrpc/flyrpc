@@ -45,7 +45,7 @@ func (ctx *Context) debug(args ...interface{}) {
 	}
 }
 
-func (ctx *Context) SendPacket(flag byte, cmd string, seq TSeq, buff []byte) error {
+func (ctx *Context) sendPacket(flag byte, cmd string, seq TSeq, buff []byte) error {
 	return ctx.Protocol.SendPacket(&Packet{
 		ClientId: ctx.ClientId,
 		Flag:     flag,
@@ -55,9 +55,9 @@ func (ctx *Context) SendPacket(flag byte, cmd string, seq TSeq, buff []byte) err
 	})
 }
 
-func (ctx *Context) SendError(cmd string, seq TSeq, err error) error {
+func (ctx *Context) sendError(cmd string, seq TSeq, err error) error {
 	buff := []byte(err.Error())
-	return ctx.SendPacket(
+	return ctx.sendPacket(
 		TypeRPC|RPCFlagResp|RPCFlagError,
 		cmd,
 		seq,
@@ -70,7 +70,7 @@ func (ctx *Context) SendMessage(cmd string, message Message) error {
 	if err != nil {
 		return err
 	}
-	return ctx.SendPacket(TypeRPC, cmd, ctx.getNextSeq(), buff)
+	return ctx.sendPacket(TypeRPC, cmd, ctx.getNextSeq(), buff)
 }
 
 func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
@@ -113,7 +113,7 @@ func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
 	}
 }
 
-func (ctx *Context) Call(cmd string, reply Message, message Message) error {
+func (ctx *Context) Call(cmd string, message Message, reply Message) error {
 	bytes, err := ctx.GetReply(cmd, message)
 	if err != nil {
 		return err
@@ -122,6 +122,17 @@ func (ctx *Context) Call(cmd string, reply Message, message Message) error {
 		ctx.serializer.Unmarshal(bytes, reply)
 	}
 	return nil
+}
+
+func (ctx *Context) GetAsync(cmd string, message Message) (chan<- []byte, chan<- error) {
+	buffChan := make(chan []byte, 1)
+	errChan := make(chan error, 1)
+	go func() {
+		bytes, err := ctx.GetReply(cmd, message)
+		buffChan <- bytes
+		errChan <- err
+	}()
+	return buffChan, errChan
 }
 
 func (ctx *Context) sendPingPacket(pingFlag byte, seq TSeq, bytes []byte) error {

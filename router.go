@@ -131,7 +131,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	}
 	ret, err := route.call(values)
 	if err != nil {
-		return ctx.SendError(pkt.Cmd, pkt.Seq, err)
+		return ctx.sendError(pkt.Cmd, pkt.Seq, err)
 	}
 	// retSize := len(ret)
 	// if retSize != route.numOut {
@@ -142,7 +142,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		if !ve.IsNil() {
 			err := ve.Interface().(error)
 			if err != nil {
-				return ctx.SendError(pkt.Cmd, pkt.Seq, err)
+				return ctx.sendError(pkt.Cmd, pkt.Seq, err)
 			}
 		}
 	}
@@ -164,14 +164,14 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 				return err
 			}
 		}
-		return ctx.SendPacket(
+		return ctx.sendPacket(
 			TypeRPC|RPCFlagResp,
 			pkt.Cmd,
 			pkt.Seq,
 			bytes)
 	}
 	// just return an empty ack message
-	return ctx.SendPacket(
+	return ctx.sendPacket(
 		TypeRPC|RPCFlagResp,
 		pkt.Cmd,
 		pkt.Seq,
@@ -203,7 +203,7 @@ func (router *router) emitPacket(ctx *Context, p *Packet) error {
 	rt := router.GetRoute(p.Cmd)
 	if rt == nil {
 		log.Println("Command", p.Cmd, "not found")
-		return ctx.SendError(p.Cmd, p.Seq, newError(ErrNotFound))
+		return ctx.sendError(p.Cmd, p.Seq, newError(ErrNotFound))
 	}
 	return rt.emitPacket(ctx, p)
 }

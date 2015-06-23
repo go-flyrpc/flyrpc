@@ -77,7 +77,7 @@ func (s *Server) emitContext(ctx *Context) {
 	}
 }
 
-func (s *Server) SendMessage(clientId int, cmd string, v Message) error {
+func (s *Server) SendMessage(clientId int, cmd string, v int) error {
 	return s.GetContext(clientId).SendMessage(cmd, v)
 }
 

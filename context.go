@@ -20,6 +20,8 @@ type Context struct {
 	replyChans map[TSeq]chan *Packet
 	pingChans  map[TSeq]chan []byte
 	timeout    time.Duration
+	// ping handler
+	pingHandler func(*Context)
 	// close handler
 	closeHandler func(*Context)
 }
@@ -171,6 +173,10 @@ func (ctx *Context) Ping(length TLength, timeout time.Duration) error {
 	return nil
 }
 
+func (ctx *Context) OnPing(handler func(*Context)) {
+	ctx.pingHandler = handler
+}
+
 func (ctx *Context) emitPacket(pkt *Packet) {
 	subType := pkt.Flag & FlagBitsType
 	switch subType {
@@ -204,6 +210,9 @@ func (ctx *Context) emitPingPacket(pkt *Packet) {
 	if pkt.Flag&PingFlagPing != 0 {
 		ctx.debug("sendPong")
 		ctx.sendPong(pkt)
+		if ctx.pingHandler != nil {
+			ctx.pingHandler(ctx)
+		}
 	} else if pkt.Flag&PingFlagPong != 0 {
 		ctx.debug("recvPong")
 		ctx.pingChans[pkt.Seq] <- pkt.MsgBuff

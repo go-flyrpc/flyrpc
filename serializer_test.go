@@ -35,6 +35,7 @@ func TestJSONSerializer(t *testing.T) {
 	testSerializer(t, JSON)
 }
 
+/*
 func TestProtoSerializer(t *testing.T) {
 	uid := int32(123)
 	s := Protobuf
@@ -55,3 +56,4 @@ func TestProtoSerializer(t *testing.T) {
 func TestMsgpack(t *testing.T) {
 	testSerializer(t, Msgpack)
 }
+*/

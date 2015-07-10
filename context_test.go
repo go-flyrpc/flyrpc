@@ -11,7 +11,7 @@ import (
 func TestContextSendMessage(t *testing.T) {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 	protocol := NewMockProtocol()
-	serializer := Protobuf
+	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	uid := int32(123)
@@ -43,7 +43,7 @@ func TestContextSendMessage(t *testing.T) {
 func TestContextCall(t *testing.T) {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 	protocol := NewMockDelayProtocol(50 * time.Millisecond)
-	serializer := Protobuf
+	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	router.AddRoute("hello", func(ctx *Context, in *TestUser) *TestUser {
@@ -71,7 +71,7 @@ func TestContextCall(t *testing.T) {
 
 func TestCallAck(t *testing.T) {
 	protocol := NewMockDelayProtocol(time.Millisecond)
-	serializer := Protobuf
+	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	router.AddRoute("hello", func(ctx *Context, in *TestUser) {
@@ -92,7 +92,7 @@ func TestCallAck(t *testing.T) {
 
 func TestCallReplyError(t *testing.T) {
 	protocol := NewMockDelayProtocol(time.Millisecond)
-	serializer := Protobuf
+	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	router.AddRoute("hello", func(ctx *Context, in *TestUser) error {
@@ -115,7 +115,7 @@ func TestCallReplyError(t *testing.T) {
 
 func TestCallReplyString(t *testing.T) {
 	protocol := NewMockDelayProtocol(time.Millisecond)
-	serializer := Protobuf
+	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	router.AddRoute("hello", func(ctx *Context, name string) (string, error) {
@@ -138,7 +138,7 @@ func TestCallReplyString(t *testing.T) {
 
 func TestCallTimeout(t *testing.T) {
 	protocol := NewMockDelayProtocol(time.Second)
-	serializer := Protobuf
+	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 	router.AddRoute("hello", func(ctx *Context, in *TestUser) *TestUser {
@@ -162,7 +162,7 @@ func TestCallTimeout(t *testing.T) {
 
 func TestPing(t *testing.T) {
 	protocol := NewMockDelayProtocol(50 * time.Millisecond)
-	serializer := Protobuf
+	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
 

@@ -9,7 +9,7 @@ import (
 
 func TestRouter(t *testing.T) {
 	uid := int32(123)
-	s := Protobuf
+	s := JSON
 	buff, err := s.Marshal(&TestUser{Id: uid, Name: "abc"})
 	assert.Nil(t, err)
 	r := NewRouter(s)
@@ -93,7 +93,7 @@ func TestRouter(t *testing.T) {
 }
 
 func TestRouterPanic(t *testing.T) {
-	s := Protobuf
+	s := JSON
 	buff, err := s.Marshal(&TestUser{Id: 123, Name: "abc"})
 	assert.Nil(t, err)
 	r := NewRouter(s)

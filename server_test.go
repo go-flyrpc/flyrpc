@@ -12,13 +12,13 @@ func makeClient(t *testing.T, addr string) *Client {
 	client, err := Dial("tcp", addr)
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
-	client.SetSerializer(Protobuf)
+	client.SetSerializer(JSON)
 	return client
 }
 
 func TestServerMultiConnect(t *testing.T) {
 	server := NewServer(&ServerOpts{
-		Serializer: Protobuf,
+		Serializer: JSON,
 	})
 	wg := &sync.WaitGroup{}
 	server.OnConnect(func(ctx *Context) {
@@ -50,7 +50,7 @@ func TestServerMultiConnect(t *testing.T) {
 func TestServerHandlePacket(t *testing.T) {
 	uid := int32(123)
 	server := NewServer(&ServerOpts{
-		Serializer: Protobuf,
+		Serializer: JSON,
 	})
 	wg := &sync.WaitGroup{}
 	server.OnMessage("1", func(ctx *Context, u *TestUser) {
@@ -72,7 +72,7 @@ func TestServerHandlePacket(t *testing.T) {
 /*
 func TestServer(t *testing.T) {
 	server := NewServer(&ServerOpts{
-		Serializer: Protobuf,
+		Serializer: JSON,
 	})
 	err := server.Listen("127.0.0.1:15555")
 	assert.Nil(t, err)
@@ -110,7 +110,7 @@ func testClient(t *testing.T, wg *sync.WaitGroup, i int) {
 	wg.Add(1)
 	conn, err := net.Dial("tcp", "127.0.0.1:15555")
 	assert.Nil(t, err)
-	client := NewClient(conn, Protobuf)
+	client := NewClient(conn, JSON)
 	client.Context.ClientId = 100 + i
 	client.OnMessage(12, func(ctx *Context, in *TestUser) *TestUser {
 		log.Println("client on", in)

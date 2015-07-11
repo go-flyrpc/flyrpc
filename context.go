@@ -105,7 +105,7 @@ func (ctx *Context) Call(cmd TCmd, reply Message, message Message) error {
 	select {
 	case rPkt := <-replyChan:
 		if (rPkt.Header.Flag & RPCFlagError) != 0 {
-			log.Println("on error", rPkt.MsgBuff)
+			ctx.debug("on error", rPkt.MsgBuff)
 			return NewFlyError(int(binary.BigEndian.Uint32(rPkt.MsgBuff)))
 		}
 		if reply != nil {

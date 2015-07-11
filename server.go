@@ -173,8 +173,6 @@ func (t *transport) addClient(clientId int) *Context {
 }
 
 func (t *transport) removeClient(clientId int) *Context {
-	// TODO remove clientId from clientIds
-	// remove context from server.contextMap
 	context := t.server.contextMap[clientId]
 	if context != nil {
 		context.Close()
@@ -185,7 +183,7 @@ func (t *transport) removeClient(clientId int) *Context {
 
 func (t *transport) Close() error {
 	// remove all clients
-	for id := range t.clientIds {
+	for _, id := range t.clientIds {
 		t.removeClient(id)
 	}
 	t.clientIds = nil

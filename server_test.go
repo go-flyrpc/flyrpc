@@ -72,6 +72,27 @@ func TestServerHandlePacket(t *testing.T) {
 	server.Close()
 }
 
+func TestServerClose(t *testing.T) {
+	server := NewServer(&ServerOpts{
+		Serializer: Protobuf,
+	})
+	wait := make(chan bool, 1)
+	server.OnConnect(func(ctx *Context) {
+		ctx.OnClose(func(ctx *Context) {
+			wait <- true
+		})
+	})
+	go func() {
+		err := server.Listen("127.0.0.1:15557")
+		assert.NoError(t, err)
+	}()
+	<-time.After(time.Millisecond)
+	client := makeClient(t, "127.0.0.1:15557")
+	<-time.After(time.Millisecond)
+	client.Close()
+	<-wait
+}
+
 /*
 func TestServer(t *testing.T) {
 	server := NewServer(&ServerOpts{

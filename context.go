@@ -121,7 +121,7 @@ func (ctx *Context) Call(cmd string, message Message, reply Message) error {
 		return err
 	}
 	if reply != nil {
-		ctx.serializer.Unmarshal(bytes, reply)
+		return ctx.serializer.Unmarshal(bytes, reply)
 	}
 	return nil
 }

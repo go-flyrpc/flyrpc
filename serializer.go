@@ -49,41 +49,5 @@ func (s *serializer) Unmarshal(bytes []byte, msg interface{}) error {
 }
 
 var (
-	JSON Serializer = &serializer{marshal: json.Marshal, unmarshal: json.Unmarshal}
-	/*
-		Protobuf Serializer = &_proto{}
-		Msgpack  Serializer = &_msgpack{}
-	*/
+	JSON Serializer = NewSerializer(json.Marshal, json.Unmarshal)
 )
-
-/*
-type _proto struct {
-}
-
-func (p *_proto) Marshal(v interface{}) ([]byte, error) {
-	m, ok := v.(proto.Message)
-	if !ok {
-		return nil, newError(ErrNotProtoMessage)
-	}
-	return proto.Marshal(m)
-}
-
-func (p *_proto) Unmarshal(bytes []byte, v interface{}) error {
-	m, ok := v.(proto.Message)
-	if !ok {
-		return newError(ErrNotProtoMessage)
-	}
-	return proto.Unmarshal(bytes, m)
-}
-
-type _msgpack struct {
-}
-
-func (m *_msgpack) Marshal(v interface{}) ([]byte, error) {
-	return msgpack.Marshal(v)
-}
-
-func (m *_msgpack) Unmarshal(bytes []byte, v interface{}) error {
-	return msgpack.Unmarshal(bytes, v)
-}
-*/

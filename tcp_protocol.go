@@ -55,6 +55,10 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 			return err
 		}
 	}
+	cmdSize := len([]byte(pk.Cmd))
+	if cmdSize > 255 {
+		return newError("COMMAND_TOO_LONG")
+	}
 	// if support zip {
 	// TODO zip
 	// TODO crc
@@ -62,7 +66,7 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	// }
 
 	// flag + trans-flag + seq + \n = 5 byte
-	pk.Length = TLength(5 + len(pk.MsgBuff) + len(pk.Cmd))
+	pk.Length = TLength(5 + len(pk.MsgBuff) + cmdSize)
 	if pk.Length > MaxLength {
 		return newError(ErrBuffTooLong)
 	}
@@ -87,8 +91,14 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 		return err
 	}
 
+	// write CmdSize
+	cmdSizeByte := byte(cmdSize)
+	if err := binary.Write(p.Writer, binary.BigEndian, cmdSizeByte); err != nil {
+		return err
+	}
+
 	// write Cmd
-	if _, err := p.Writer.WriteString(pk.Cmd + "\n"); err != nil {
+	if _, err := p.Writer.WriteString(pk.Cmd); err != nil {
 		return err
 	}
 
@@ -146,12 +156,19 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	}
 	pkt.Seq = TSeq(seq)
 
-	// read Cmd
-	cmd, err := reader.ReadString('\n')
+	// read CmdSize
+	cmdSize, err := reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
-	pkt.Cmd = cmd[:len(cmd)-1]
+
+	// read Cmd
+	cmdBuff := make([]byte, cmdSize)
+	_, err = io.ReadFull(reader, cmdBuff)
+	if err != nil {
+		return nil, err
+	}
+	pkt.Cmd = string(cmdBuff)
 
 	// read MsgBuff
 	pkt.MsgBuff = reader.Bytes()

@@ -12,9 +12,9 @@ go get gopkg.in/flyrpc.v1
 
 ## Message Protocol
 
-| Packet Length | Flag   | Transfer Flag | Sequence  | Command   | Buffer  | CRC16   |
-|:-------------:| ------ | ------------- | ---------:|:---------:| ------- | ------- |
-| 2 bytes       | 1 byte | 1 byte        | 2 bytes   | string\n  | n bytes | 2 bytes |
+|Name | Length | Flag   | Transfer Flag | Sequence | CMD Len | CMD   | Buffer  | CRC16   |
+|-----|:------:|:------:|:-------------:|:--------:|:-------:|:-----:|:-------:|:-------:|
+|Bytes| 2      | 1      | 1             | 2        | 1       | *     | *       | 2       |
 
 ### Flag Spec
 

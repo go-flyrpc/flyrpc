@@ -13,10 +13,10 @@ go get gopkg.in/flyrpc.v1
 
 ## 消息协议
 
-| Packet Length | Flag   | Transfer Flag | Sequence  | Command   | Buffer |
-|:-------------:| ------ | ------------- | ---------:|:---------:| ------ |
-| 2 byte        | 1 byte | 1 byte        | 2 byte    | string\n  | n byte |
-| 消息长度      | 标志位 | 传输控制位    | 序列ID    | 命令ID    | 消息体 |
+|Name | Length | Flag   | Transfer Flag | Sequence | CMD Len | CMD   | Buffer  | CRC16  |
+|-----|:------:|:------:|:-------------:|:--------:|:-------:|:-----:|:-------:|:------:|
+|Bytes| 2      | 1      | 1             | 2        | 1       | *     | *       | 2      |
+|     | 消息长度 | 标志位 | 传输控制位  | 序列ID   | 命令长度| 命令ID | 消息体 | 校验   |
 
 ### Flag说明
 

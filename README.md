@@ -12,50 +12,16 @@ go get gopkg.in/flyrpc.v1
 
 ## Message Protocol
 
-|Name | Length | Flag   | Transfer Flag | Sequence | CMD Len | CMD   | Buffer  | CRC16   |
-|-----|:------:|:------:|:-------------:|:--------:|:-------:|:-----:|:-------:|:-------:|
-|Bytes| 2      | 1      | 1             | 2        | 1       | *     | *       | 2       |
+|Name | Flag   | Length | Sequence | CMD(only Req) | Buffer  |
+|-----|:------:|:------:|:--------:|:------:|:-------:|
+|Bytes| 1      | 1-4    | 2        |string\0| *       |
 
 ### Flag Spec
 
-| SubType | Options |
-| ------: | ------- |
-| 2 bit   | 6 bit   |
-
-| SubType | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
-| ------- |---|---|---|---|---|---|---|---|
-| RPC     | 1 | 1 | ? | CRC16 | Buffer | Error | Resp | Req |
-| Ping    | 1 | 0 | ? | CRC16 | ? | ? | Pong | Ping |
-| Helo    | 0 | 1 | ? | CRC16 | ? | ? | ? | ? |
-| MQ      | 0 | 0 | ? | CRC16 | ? | ? | ? | ? |
-
-CRC16 allow to add salt.
-
-_NOTE_ CRC16 not support yet, keep it 0.
-
-### Transfer Flag
-
-Transfer Flag 0x00 should be `plain` `json`.
-
-_NOTE_ Not complete.
-
-Design A
-
-| Accept Encoding | Encoding | Accept Serializer | Serializer |
-|:--------------- | -------- | ----------------- | ---------- |
-| 2 bits          | 2 bits   | 2 bits            | 2 bits     |
-
-Up to 4 encoding and 4 serializer.
-
-Design B
-
-| Encoding | Serializer |
-| -------- | ---------- |
-| 2 bits   | 2 bits     |
-
-If HELO, it means Accept-Encoding and Accept-Serializer
-
-Up to 16 encoding and 16 serializer. (Who need 16 encoding and 16 serializer)
+| 1     | 2       | 3 | 4     | 5 | 6 | 7 - 8        |
+|-------|---------|---|-------|---|---|--------------|
+|Req 0  |Must ACK |Zip|Partial|   |   | length bytes |
+|Res 1  |Error    |   |       |   |   |              |
 
 ### Buffer
 

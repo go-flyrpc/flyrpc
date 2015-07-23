@@ -68,7 +68,7 @@ func (ctx *Context) sendError(cmd string, seq TSeq, err error) error {
 }
 
 func (ctx *Context) SendMessage(cmd string, message Message) error {
-	buff, err := ctx.serializer.Marshal(message)
+	buff, err := MessageToBytes(message, ctx.serializer)
 	if err != nil {
 		return err
 	}

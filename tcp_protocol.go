@@ -72,14 +72,11 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 		return err
 	}
 
-	// write CmdSize
-	cmdSizeByte := byte(cmdSize)
-	if err := binary.Write(p.Writer, binary.BigEndian, cmdSizeByte); err != nil {
-		return err
-	}
-
 	// write Code
 	if _, err := p.Writer.WriteString(pk.Code); err != nil {
+		return err
+	}
+	if err := p.Writer.WriteByte(0); err != nil {
 		return err
 	}
 
@@ -116,19 +113,12 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	}
 	pkt.Seq = TSeq(seq)
 
-	// read CmdSize
-	cmdSize, err := reader.ReadByte()
+	// read Code
+	code, err := reader.ReadString(0)
 	if err != nil {
 		return nil, err
 	}
-
-	// read Cmd
-	cmdBuff := make([]byte, cmdSize)
-	_, err = io.ReadFull(reader, cmdBuff)
-	if err != nil {
-		return nil, err
-	}
-	pkt.Code = string(cmdBuff)
+	pkt.Code = code[:len(code)-1]
 
 	// read length
 	err = binary.Read(reader, binary.BigEndian, &pkt.Length)

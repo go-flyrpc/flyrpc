@@ -11,8 +11,8 @@ go get gopkg.in/flyrpc.v1
 # What the protocol defined.
 
 * Asynchronous Request/Response
-* Request with unlimited string code and 0~4GB binary payload.
-* Response with unlimited string code and 0~4GB binary payload.
+* Request with unlimited string code and unlimited binary payload.
+* Response with unlimited string code and unlimited binary payload.
 * Compress code and payload
 * Request can have an implicit `ack response` or `no response`.
 
@@ -22,7 +22,7 @@ go get gopkg.in/flyrpc.v1
 
 |Name   | Flag   | Sequence |Code    | Length | Payload |
 |-------|:------:|:--------:|:------:|:------:|:-------:|
-|Bytes  | 1      | 2        |string\0| 1-4    | *       |
+|Bytes  | 1      | 2        |string\0| 1,2,4,8| *       |
 
 ### Flag Spec
 

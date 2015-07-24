@@ -13,7 +13,7 @@ const (
 )
 
 type TSeq uint16
-type TLength uint32
+type TLength uint64
 
 const MaxLength = ^TLength(0)
 

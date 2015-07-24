@@ -8,42 +8,57 @@ FlyRPC is a PROTOCOL implements maximum features with minimal packet size.
 go get gopkg.in/flyrpc.v1
 ```
 
+# What the protocol defined.
+
+* Asynchronous Request/Response
+* Request with unlimited string code and 0~4GB binary payload.
+* Response with unlimited string code and 0~4GB binary payload.
+* Compress code and payload
+* Request can have an implicit `ack response` or `no response`.
+
 # Protocol
 
-## Message Protocol
+## Packet Spec
 
-|Name | Flag   | Length | Sequence | CMD(only Req) | Buffer  |
-|-----|:------:|:------:|:--------:|:------:|:-------:|
-|Bytes| 1      | 1-4    | 2        |string\0| *       |
+|Name   | Flag   | Sequence |Code    | Length | Payload |
+|-------|:------:|:--------:|:------:|:------:|:-------:|
+|Bytes  | 1      | 2        |string\0| 1-4    | *       |
+|Require|        |          |        |        |         |
 
 ### Flag Spec
 
-| 1     | 2       | 3 | 4     | 5 | 6 | 7 - 8        |
-|-------|---------|---|-------|---|---|--------------|
-|Req 0  |Must ACK |Zip|Partial|   |   | length bytes |
-|Res 1  |Error    |   |       |   |   |              |
+| 1      | 2           | 3 | 4 | 5      | 6      | 7 - 8        |
+|--------|-------------|---|---|--------|--------|--------------|
+|Response|Wait Response|   |   |Zip Code|Zip Data| length bytes |
 
-### Buffer
+# API
 
-If `Error` flag is `1`, buffer is `string`, it is the error code.
+```js
+// level 1
+conn.onRawPacket(flag, seq, rawCode, rawPayload)
+conn.sendRawPacket(flag, seq, rawCode, rawPayload)
 
-If `Error` flag is `0`, buffer is the serialized bytes wanted type.
+// level 2
+conn.onPacket(flag, seq, code, payload)
+conn.sendPacket(flag, seq, code, payload)
 
-Support `[]byte` `string` `struct` `map`
+// level 3
+conn.sendRequest(code, payload)
+conn.sendResponse(seq, code, payload)
+conn.onRequest(function handler(seq, code, payload))
+conn.onResponse(function handler(seq, code, payload))
 
-Not support yet `int` `float`
+// level 4
+conn.send(code, payload)
+conn.request(code, payload, function callback(err, code, payload))
+conn.handle(code, function handler(payload, function reply(code, payload)))
+```
 
-## Internal Multiplexed Protocol
-
-| Client count  | Client Id 1   | ...  | Client Id n | Buffer Length | Buffer |
-| ------------- |:-------------:| ----:|:-----------:| ------------- | ------ |
-| 1 byte        | 2 byte        | ...  | 2 byte      | 2byte         | n byte |
+### conn.OnMessage(func(code, payload) (code, payload))
+### conn.Request(code, payload) (code, payload)
+### conn.Send(code, payload)
 
 # Draft
-## Patterns
-* [OK]Send/Recv
-* [OK]Req/Res
-* Pub/Sub
 
 ## Network
 * [OK]TCP
@@ -80,11 +95,11 @@ MessageHandler could return below results
 
 #### Server.Listen(addr)
 
-#### Server.OnMessage(cmd, MessageHandler)
+#### Server.OnMessage(path, MessageHandler)
 
-#### Context.SendMessage(cmd, Message)
+#### Context.SendMessage(path, Message)
 
-#### Context.Call(cmd, Message) (Message, error)
+#### Context.Call(path, Message) (Message, error)
 
 #### Context.Ping(length, timeout) error
 
@@ -92,11 +107,11 @@ MessageHandler could return below results
 
 #### Client.Connect(addr)
 
-#### Client.OnMessage(cmd, MessageHandler)
+#### Client.OnMessage(path, MessageHandler)
 
-#### Client.SendMessage(cmd, Message)
+#### Client.SendMessage(path, Message)
 
-#### Client.Call(cmd, Message) (Message, error)
+#### Client.Call(path, Message) (Message, error)
 
 #### Client.Ping(length, timeout) error
 

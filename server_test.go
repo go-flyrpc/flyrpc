@@ -81,7 +81,7 @@ func TestServer(t *testing.T) {
 	server.OnMessage(21, func(ctx *Context, in *TestUser) *TestUser {
 		reply := new(TestUser)
 		log.Println("server on", in)
-		// call client cmd 2 and response another user
+		// call client code 2 and response another user
 		log.Println("server call 2")
 		err := ctx.Call(12, in, reply)
 		assert.Nil(t, err)

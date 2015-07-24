@@ -23,13 +23,12 @@ go get gopkg.in/flyrpc.v1
 |Name   | Flag   | Sequence |Code    | Length | Payload |
 |-------|:------:|:--------:|:------:|:------:|:-------:|
 |Bytes  | 1      | 2        |string\0| 1-4    | *       |
-|Require|        |          |        |        |         |
 
 ### Flag Spec
 
-| 1      | 2           | 3 | 4 | 5      | 6      | 7 - 8        |
-|--------|-------------|---|---|--------|--------|--------------|
-|Response|Wait Response|   |   |Zip Code|Zip Data| length bytes |
+| 1      | 2           | 3 | 4 | 5      | 6         | 7 - 8        |
+|--------|-------------|---|---|--------|-----------|--------------|
+|Response|Wait Response|   |   |Zip Code|Zip Payload| length bytes |
 
 # API
 

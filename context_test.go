@@ -95,6 +95,7 @@ func TestCallReplyError(t *testing.T) {
 	serializer := JSON
 	router := NewRouter(serializer)
 	context := NewContext(protocol, router, 0, serializer)
+	context.Debug = true
 	router.AddRoute("hello", func(ctx *Context, in *TestUser) error {
 		return newError("FOO")
 	})
@@ -176,10 +177,4 @@ func TestPing(t *testing.T) {
 		}
 	}()
 
-	err := context.Ping(0, 200*time.Millisecond)
-	assert.NoError(t, err)
-
-	err = context.Ping(0, 10*time.Millisecond)
-	assert.Error(t, err)
-	assert.Equal(t, ErrTimeOut, err.Error())
 }

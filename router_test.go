@@ -10,7 +10,7 @@ import (
 func TestRouter(t *testing.T) {
 	uid := int32(123)
 	s := JSON
-	buff, err := s.Marshal(&TestUser{Id: uid, Name: "abc"})
+	payload, err := s.Marshal(&TestUser{Id: uid, Name: "abc"})
 	assert.Nil(t, err)
 	r := NewRouter(s)
 	// c := make(chan *TestUser, 10)
@@ -26,21 +26,21 @@ func TestRouter(t *testing.T) {
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      "1",
-		MsgBuff:  buff,
+		Code:     "1",
+		Payload:  payload,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uid, p1.Id)
 
 	r.AddRoute("2", func(pkt *Packet, u *TestUser) error {
-		assert.Equal(t, "2", pkt.Cmd)
+		assert.Equal(t, "2", pkt.Code)
 		p2 = u
 		return errors.New("e1")
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      "2",
-		MsgBuff:  buff,
+		Code:     "2",
+		Payload:  payload,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uid, p2.Id)
@@ -51,8 +51,8 @@ func TestRouter(t *testing.T) {
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      "3",
-		MsgBuff:  buff,
+		Code:     "3",
+		Payload:  payload,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uid, p3.Id)
@@ -67,8 +67,8 @@ func TestRouter(t *testing.T) {
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      "4",
-		MsgBuff:  buff,
+		Code:     "4",
+		Payload:  payload,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uid, p4.Id)
@@ -79,22 +79,22 @@ func TestRouter(t *testing.T) {
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      "5",
-		MsgBuff:  buff,
+		Code:     "5",
+		Payload:  payload,
 	})
 	assert.Nil(t, err)
 
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      "100",
-		MsgBuff:  buff,
+		Code:     "100",
+		Payload:  payload,
 	})
 	assert.Nil(t, err)
 }
 
 func TestRouterPanic(t *testing.T) {
 	s := JSON
-	buff, err := s.Marshal(&TestUser{Id: 123, Name: "abc"})
+	payload, err := s.Marshal(&TestUser{Id: 123, Name: "abc"})
 	assert.Nil(t, err)
 	r := NewRouter(s)
 	protocol := NewMockProtocol()
@@ -105,8 +105,8 @@ func TestRouterPanic(t *testing.T) {
 	})
 	err = r.emitPacket(ctx, &Packet{
 		Protocol: protocol,
-		Cmd:      "1",
-		MsgBuff:  buff,
+		Code:     "1",
+		Payload:  payload,
 	})
 	assert.Nil(t, err)
 }

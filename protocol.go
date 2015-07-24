@@ -5,29 +5,15 @@ package flyrpc
 // TypePing - type of Ping. Keepalive
 // TypeHello - type of Hello. Tell the client information related with protocol, like version, zip, supported encoding
 const (
-	FlagBitsType byte = 0xb0 // 11000000
-	TypeRPC      byte = 0xb0 // 11000000
-	TypePing     byte = 0x80 // 10000000
-	TypeHello    byte = 0x40 // 01000000
-	TypeMQ       byte = 0x00 // 00000000
-)
-
-const (
-	// REQ 有此标志必须返回, 无此标志也无 Resp标志的是纯消息
-	RPCFlagReq    byte = 0x01
-	RPCFlagResp   byte = 0x02
-	RPCFlagError  byte = 0x04
-	RPCFlagBuffer byte = 0x08
-	PingFlagPing  byte = 0x01
-	PingFlagPong  byte = 0x02
-	// LFLAG_NOTIFY byte = 0x10
-	// LFLAG_LEN_16 byte = 0x08
-	// LFLAG_ZIP         byte = 0x02
-	// LFLAG_ENCRYPT     byte = 0x01
+	FlagResponse     byte = 0x80
+	FlagWaitResponse byte = 0x40
+	FlagZipCode      byte = 0x08
+	FlagZipPayload   byte = 0x04
+	FlagLenPayload   byte = 0x03
 )
 
 type TSeq uint16
-type TLength uint16
+type TLength uint32
 
 const MaxLength = ^TLength(0)
 
@@ -35,15 +21,13 @@ type Packet struct {
 	// TODO remove this from packet
 	Protocol Protocol
 	ClientId int
-	SubType  byte
-	Length   TLength
-	Flag     byte
-	// 2bit accept-encoding, 2bit encoding, 2bit accept-serializer, 2bit serializer
-	TransferFlag byte
+
+	Flag byte
 	// message sequence
 	Seq     TSeq
-	Cmd     string
-	MsgBuff []byte
+	Length  TLength
+	Code    string
+	Payload []byte
 }
 
 type Protocol interface {

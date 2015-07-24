@@ -20,25 +20,25 @@ func TestProtocolReal(t *testing.T) {
 	assert.Nil(t, err2)
 	p2 := NewTcpProtocol(conn2, false)
 
-	flag := TypeRPC | RPCFlagResp | RPCFlagError
+	flag := FlagResponse
 
 	err = p1.SendPacket(&Packet{
 		Flag:    flag,
-		Cmd:     "222",
+		Code:    "222",
 		Seq:     123,
-		MsgBuff: []byte{1, 2, 3, 4, 5, 6},
+		Payload: []byte{1, 2, 3, 4, 5, 6},
 	})
 	assert.Nil(t, err)
 
 	pkt, err := p2.ReadPacket()
 
 	assert.Nil(t, err)
-	log.Println("return packet", pkt.MsgBuff)
+	log.Println("return packet", pkt.Payload)
 	assert.Equal(t, flag, pkt.Flag)
-	assert.Equal(t, "222", pkt.Cmd)
+	assert.Equal(t, "222", pkt.Code)
 	assert.Equal(t, TSeq(123), pkt.Seq)
-	assert.Equal(t, 6, len(pkt.MsgBuff))
-	assert.Equal(t, byte(6), pkt.MsgBuff[5])
+	assert.Equal(t, 6, len(pkt.Payload))
+	assert.Equal(t, byte(6), pkt.Payload[5])
 	err = conn1.Close()
 	assert.Nil(t, err)
 }

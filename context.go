@@ -16,12 +16,8 @@ type Context struct {
 	// private
 	serializer Serializer
 	nextSeq    TSeq
-	pingSeq    TSeq
 	replyChans map[TSeq]chan *Packet
-	pingChans  map[TSeq]chan []byte
 	timeout    time.Duration
-	// ping handler
-	pingHandler func(*Context)
 	// close handler
 	closeHandler func(*Context)
 }
@@ -33,7 +29,6 @@ func NewContext(protocol Protocol, router Router, clientId int, serializer Seria
 		ClientId:   clientId,
 		serializer: serializer,
 		replyChans: make(map[TSeq]chan *Packet),
-		pingChans:  make(map[TSeq]chan []byte),
 		timeout:    10 * time.Second,
 	}
 }
@@ -47,46 +42,46 @@ func (ctx *Context) debug(args ...interface{}) {
 	}
 }
 
-func (ctx *Context) sendPacket(flag byte, cmd string, seq TSeq, buff []byte) error {
+func (ctx *Context) sendPacket(flag byte, code string, seq TSeq, payload []byte) error {
 	return ctx.Protocol.SendPacket(&Packet{
 		ClientId: ctx.ClientId,
 		Flag:     flag,
-		Cmd:      cmd,
+		Code:     code,
 		Seq:      seq,
-		MsgBuff:  buff,
+		Payload:  payload,
 	})
 }
 
-func (ctx *Context) sendError(cmd string, seq TSeq, err error) error {
-	buff := []byte(err.Error())
+func (ctx *Context) sendError(code string, seq TSeq, err error) error {
+	payload := []byte{}
 	return ctx.sendPacket(
-		TypeRPC|RPCFlagResp|RPCFlagError,
-		cmd,
+		FlagResponse,
+		err.Error(),
 		seq,
-		buff,
+		payload,
 	)
 }
 
-func (ctx *Context) SendMessage(cmd string, message Message) error {
-	buff, err := MessageToBytes(message, ctx.serializer)
+func (ctx *Context) SendMessage(code string, message Message) error {
+	payload, err := MessageToBytes(message, ctx.serializer)
 	if err != nil {
 		return err
 	}
-	return ctx.sendPacket(TypeRPC, cmd, ctx.getNextSeq(), buff)
+	return ctx.sendPacket(FlagWaitResponse, code, ctx.getNextSeq(), payload)
 }
 
-func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
-	ctx.debug("Call", cmd, message)
+func (ctx *Context) GetReply(code string, message Message) ([]byte, error) {
+	ctx.debug("Call", code, message)
 
-	buff, err := MessageToBytes(message, ctx.serializer)
+	payload, err := MessageToBytes(message, ctx.serializer)
 	if err != nil {
 		return nil, err
 	}
 	packet := &Packet{
-		Flag:    TypeRPC | RPCFlagReq,
-		Cmd:     cmd,
+		Flag:    FlagWaitResponse,
+		Code:    code,
 		Seq:     ctx.getNextSeq(),
-		MsgBuff: buff,
+		Payload: payload,
 	}
 
 	// Send Packet
@@ -96,27 +91,27 @@ func (ctx *Context) GetReply(cmd string, message Message) ([]byte, error) {
 
 	// init channel before send packet
 	replyChan := make(chan *Packet, 1)
-	// set replyChan for cmd | seq
+	// set replyChan for code | seq
 	ctx.replyChans[packet.Seq] = replyChan
 
 	// make sure that replyChan is released
 	defer delete(ctx.replyChans, packet.Seq)
 	select {
 	case rPacket := <-replyChan:
-		ctx.debug("reply buff", rPacket.MsgBuff)
-		if rPacket.Flag&RPCFlagError != 0 {
-			ctx.debug("reply error", string(rPacket.MsgBuff))
-			return nil, newReplyError(string(rPacket.MsgBuff), rPacket)
+		ctx.debug("reply payload", rPacket.Payload)
+		if rPacket.Code != "" {
+			ctx.debug("reply error", string(rPacket.Code))
+			return nil, newReplyError(string(rPacket.Code), rPacket)
 		}
-		return rPacket.MsgBuff, nil
+		return rPacket.Payload, nil
 
 	case <-time.After(ctx.timeout):
 		return nil, newError(ErrTimeOut)
 	}
 }
 
-func (ctx *Context) Call(cmd string, message Message, reply Message) error {
-	bytes, err := ctx.GetReply(cmd, message)
+func (ctx *Context) Call(code string, message Message, reply Message) error {
+	bytes, err := ctx.GetReply(code, message)
 	if err != nil {
 		return err
 	}
@@ -126,71 +121,19 @@ func (ctx *Context) Call(cmd string, message Message, reply Message) error {
 	return nil
 }
 
-func (ctx *Context) GetAsync(cmd string, message Message) (chan<- []byte, chan<- error) {
+func (ctx *Context) GetAsync(code string, message Message) (chan<- []byte, chan<- error) {
 	buffChan := make(chan []byte, 1)
 	errChan := make(chan error, 1)
 	go func() {
-		bytes, err := ctx.GetReply(cmd, message)
+		bytes, err := ctx.GetReply(code, message)
 		buffChan <- bytes
 		errChan <- err
 	}()
 	return buffChan, errChan
 }
 
-func (ctx *Context) sendPingPacket(pingFlag byte, seq TSeq, bytes []byte) error {
-	return ctx.Protocol.SendPacket(&Packet{
-		Flag:    TypePing | pingFlag,
-		Cmd:     "",
-		Seq:     seq,
-		Length:  TLength(len(bytes)),
-		MsgBuff: bytes,
-	})
-}
-
-func (ctx *Context) sendPing(seq TSeq, length TLength) error {
-	return ctx.sendPingPacket(PingFlagPing, seq, make([]byte, length))
-}
-
-func (ctx *Context) sendPong(pkt *Packet) error {
-	return ctx.sendPingPacket(PingFlagPong, pkt.Seq, pkt.MsgBuff)
-}
-
-func (ctx *Context) Ping(length TLength, timeout time.Duration) error {
-	ctx.pingSeq++
-	seq := ctx.pingSeq
-	err := ctx.sendPing(seq, length)
-	if err != nil {
-		return err
-	}
-	pingChan := make(chan []byte, 1)
-	ctx.pingChans[seq] = pingChan
-	defer delete(ctx.pingChans, seq)
-	select {
-	case <-pingChan:
-	case <-time.After(timeout):
-		return newError(ErrTimeOut)
-	}
-	return nil
-}
-
-func (ctx *Context) OnPing(handler func(*Context)) {
-	ctx.pingHandler = handler
-}
-
 func (ctx *Context) emitPacket(pkt *Packet) {
-	subType := pkt.Flag & FlagBitsType
-	switch subType {
-	case TypeRPC:
-		ctx.emitRPCPacket(pkt)
-	case TypePing:
-		ctx.emitPingPacket(pkt)
-	default:
-		log.Println("Unsupported subType", subType)
-	}
-}
-
-func (ctx *Context) emitRPCPacket(pkt *Packet) {
-	if pkt.Flag&RPCFlagResp != 0 {
+	if pkt.Flag&FlagResponse != 0 {
 		replyChan := ctx.replyChans[pkt.Seq]
 		if replyChan == nil {
 			ctx.debug("No channel found, pkt is :", pkt)
@@ -200,22 +143,9 @@ func (ctx *Context) emitRPCPacket(pkt *Packet) {
 		return
 	}
 	ctx.Packet = pkt
-	ctx.debug("OnMessage", pkt.Cmd, pkt.Flag, pkt.MsgBuff)
+	ctx.debug("OnMessage", pkt.Code, pkt.Flag, pkt.Payload)
 	if err := ctx.Router.emitPacket(ctx, pkt); err != nil {
 		ctx.debug("Error to call packet", err)
-	}
-}
-
-func (ctx *Context) emitPingPacket(pkt *Packet) {
-	if pkt.Flag&PingFlagPing != 0 {
-		ctx.debug("sendPong")
-		ctx.sendPong(pkt)
-		if ctx.pingHandler != nil {
-			ctx.pingHandler(ctx)
-		}
-	} else if pkt.Flag&PingFlagPong != 0 {
-		ctx.debug("recvPong")
-		ctx.pingChans[pkt.Seq] <- pkt.MsgBuff
 	}
 }
 

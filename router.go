@@ -118,12 +118,12 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		} else if inType == typePacket {
 			values[i] = reflect.ValueOf(pkt)
 		} else if inType == typeBytes {
-			values[i] = reflect.ValueOf(pkt.MsgBuff)
+			values[i] = reflect.ValueOf(pkt.Payload)
 		} else if inType == typeString {
-			values[i] = reflect.ValueOf(string(pkt.MsgBuff))
+			values[i] = reflect.ValueOf(string(pkt.Payload))
 		} else {
 			v := reflect.New(inType.Elem())
-			err := route.serializer.Unmarshal(pkt.MsgBuff, v.Interface())
+			err := route.serializer.Unmarshal(pkt.Payload, v.Interface())
 			if err != nil {
 				return err
 			}
@@ -132,7 +132,7 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 	}
 	ret, err := route.call(values)
 	if err != nil {
-		return ctx.sendError(pkt.Cmd, pkt.Seq, err)
+		return ctx.sendError(pkt.Code, pkt.Seq, err)
 	}
 	// retSize := len(ret)
 	// if retSize != route.numOut {
@@ -143,12 +143,12 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 		if !ve.IsNil() {
 			err := ve.Interface().(error)
 			if err != nil {
-				return ctx.sendError(pkt.Cmd, pkt.Seq, err)
+				return ctx.sendError(pkt.Code, pkt.Seq, err)
 			}
 		}
 	}
-	if pkt.Flag&RPCFlagReq == 0 {
-		// not a call, no response
+	if pkt.Flag&FlagWaitResponse == 0 {
+		// not a RPC, no response
 		return nil
 	}
 	if route.outType != nil {
@@ -166,15 +166,15 @@ func (route *route) emitPacket(ctx *Context, pkt *Packet) error {
 			}
 		}
 		return ctx.sendPacket(
-			TypeRPC|RPCFlagResp,
-			pkt.Cmd,
+			FlagResponse,
+			"", // pkt.Code,
 			pkt.Seq,
 			bytes)
 	}
 	// just return an empty ack message
 	return ctx.sendPacket(
-		TypeRPC|RPCFlagResp,
-		pkt.Cmd,
+		FlagResponse,
+		"", // pkt.Code,
 		pkt.Seq,
 		[]byte{},
 	)
@@ -191,20 +191,20 @@ func NewRouter(serializer Serializer) Router {
 	return &router{routes: make(map[string]Route), serializer: serializer}
 }
 
-func (router *router) AddRoute(cmd string, h HandlerFunc) {
+func (router *router) AddRoute(code string, h HandlerFunc) {
 	route := NewRoute(h, router.serializer)
-	router.routes[cmd] = route
+	router.routes[code] = route
 }
 
-func (router *router) GetRoute(cmd string) Route {
-	return router.routes[cmd]
+func (router *router) GetRoute(code string) Route {
+	return router.routes[code]
 }
 
 func (router *router) emitPacket(ctx *Context, p *Packet) error {
-	rt := router.GetRoute(p.Cmd)
+	rt := router.GetRoute(p.Code)
 	if rt == nil {
-		log.Println("Command", p.Cmd, "not found")
-		return ctx.sendError(p.Cmd, p.Seq, newError(ErrNotFound))
+		log.Println("Command", p.Code, "not found")
+		return ctx.sendError(p.Code, p.Seq, newError(ErrNotFound))
 	}
 	return rt.emitPacket(ctx, p)
 }

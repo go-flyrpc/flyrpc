@@ -64,8 +64,8 @@ func (c *Client) handlePackets() {
 	}
 }
 
-func (c *Client) OnMessage(cmd string, handler HandlerFunc) {
-	c.Router.AddRoute(cmd, handler)
+func (c *Client) OnMessage(code string, handler HandlerFunc) {
+	c.Router.AddRoute(code, handler)
 }
 
 func (c *Client) Close() error {

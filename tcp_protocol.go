@@ -2,7 +2,6 @@ package flyrpc
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/binary"
 	"io"
 	"net"
@@ -10,10 +9,12 @@ import (
 )
 
 type TcpProtocol struct {
-	IsMultiplex bool
-	Conn        net.Conn
-	Reader      *bufio.Reader
-	Writer      *bufio.Writer
+	// Conn
+	Conn net.Conn
+	// Reader
+	Reader *bufio.Reader
+	// Writer
+	Writer *bufio.Writer
 }
 
 func NewTcpProtocol(conn net.Conn, isMultiplex bool) *TcpProtocol {
@@ -27,9 +28,8 @@ func NewTcpProtocol(conn net.Conn, isMultiplex bool) *TcpProtocol {
 
 func newTcpProtocol(reader io.Reader, writer io.Writer, isMultiplex bool) *TcpProtocol {
 	p := &TcpProtocol{
-		IsMultiplex: isMultiplex,
-		Reader:      bufio.NewReader(reader),
-		Writer:      bufio.NewWriter(writer),
+		Reader: bufio.NewReader(reader),
+		Writer: bufio.NewWriter(writer),
 	}
 	return p
 }
@@ -50,39 +50,20 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 	if p.Writer.Available() == 0 {
 		return newError(ErrWriterClosed)
 	}
-	if p.IsMultiplex {
-		if err := binary.Write(p.Writer, binary.BigEndian, pk.ClientId); err != nil {
-			return err
-		}
+	if len(pk.Payload) > int(MaxLength) {
+		return newError(ErrBuffTooLong)
 	}
-	cmdSize := len([]byte(pk.Cmd))
+	cmdSize := len([]byte(pk.Code))
 	if cmdSize > 255 {
 		return newError("COMMAND_TOO_LONG")
 	}
 	// if support zip {
 	// TODO zip
-	// TODO crc
-	// buff = zip(buff)
+	// payload = zip(payload)
 	// }
-
-	// flag + trans-flag + seq + \n = 5 byte
-	pk.Length = TLength(5 + len(pk.MsgBuff) + cmdSize)
-	if pk.Length > MaxLength {
-		return newError(ErrBuffTooLong)
-	}
-
-	// write Length
-	if err := binary.Write(p.Writer, binary.BigEndian, pk.Length); err != nil {
-		return err
-	}
 
 	// write Flag
 	if err := binary.Write(p.Writer, binary.BigEndian, pk.Flag); err != nil {
-		return err
-	}
-
-	// write Transfer Flag
-	if err := binary.Write(p.Writer, binary.BigEndian, pk.TransferFlag); err != nil {
 		return err
 	}
 
@@ -97,13 +78,19 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 		return err
 	}
 
-	// write Cmd
-	if _, err := p.Writer.WriteString(pk.Cmd); err != nil {
+	// write Code
+	if _, err := p.Writer.WriteString(pk.Code); err != nil {
 		return err
 	}
 
-	// write Buff
-	if _, err := p.Writer.Write(pk.MsgBuff); err != nil {
+	// write Payload Length
+	pk.Length = TLength(len(pk.Payload))
+	if err := binary.Write(p.Writer, binary.BigEndian, pk.Length); err != nil {
+		return err
+	}
+
+	// write Payload
+	if _, err := p.Writer.Write(pk.Payload); err != nil {
 		return err
 	}
 	return p.Writer.Flush()
@@ -111,39 +98,12 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 
 func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	pkt := &Packet{}
-	// only for server
-	if p.IsMultiplex {
-		err := binary.Read(p.Reader, binary.BigEndian, &pkt.ClientId)
-		if err != nil {
-			return nil, err
-		}
-	}
-	// read length
-	err := binary.Read(p.Reader, binary.BigEndian, &pkt.Length)
-	if err != nil {
-		return nil, err
-	}
 
-	// read Full Packet
-	buf := make([]byte, pkt.Length)
-	_, err = io.ReadFull(p.Reader, buf)
-	if err != nil {
-		return nil, err
-	}
-	// TODO checksum
-	// TODO unzip
+	reader := p.Reader
 
-	reader := bytes.NewBuffer(buf)
-
+	var err error
 	// read Flag
 	pkt.Flag, err = reader.ReadByte()
-	if err != nil {
-		return nil, err
-	}
-	pkt.SubType = pkt.Flag & FlagBitsType
-
-	// read TransferFlag
-	pkt.TransferFlag, err = reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
@@ -168,9 +128,20 @@ func (p *TcpProtocol) ReadPacket() (*Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	pkt.Cmd = string(cmdBuff)
+	pkt.Code = string(cmdBuff)
 
-	// read MsgBuff
-	pkt.MsgBuff = reader.Bytes()
+	// read length
+	err = binary.Read(reader, binary.BigEndian, &pkt.Length)
+	if err != nil {
+		return nil, err
+	}
+
+	// read Payload
+	pkt.Payload = make([]byte, pkt.Length)
+	_, err = io.ReadFull(reader, pkt.Payload)
+	if err != nil {
+		return nil, err
+	}
+	// TODO unzip
 	return pkt, nil
 }

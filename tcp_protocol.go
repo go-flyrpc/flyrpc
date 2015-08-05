@@ -76,18 +76,16 @@ func (p *TcpProtocol) SendPacket(pk *Packet) error {
 }
 
 func (p *TcpProtocol) SendHeader(pk *Packet) error {
-	var sizeOfLength byte
+	bitsOfLength := 8
 	if pk.Length > 0xffffffff {
-		sizeOfLength = 8
+		bitsOfLength = 64
 		pk.Flag = pk.Flag | 0x03
 	} else if pk.Length > 0xffff {
-		sizeOfLength = 4
+		bitsOfLength = 32
 		pk.Flag = pk.Flag | 0x02
 	} else if pk.Length > 0xff {
-		sizeOfLength = 2
+		bitsOfLength = 16
 		pk.Flag = pk.Flag | 0x01
-	} else {
-		sizeOfLength = 1
 	}
 
 	// write Flag
@@ -109,19 +107,19 @@ func (p *TcpProtocol) SendHeader(pk *Packet) error {
 	}
 
 	// write Payload Length
-	if sizeOfLength == 1 {
+	if bitsOfLength == 8 {
 		if err := p.Writer.WriteByte(byte(pk.Length)); err != nil {
 			return err
 		}
-	} else if sizeOfLength == 2 {
+	} else if bitsOfLength == 16 {
 		if err := binary.Write(p.Writer, binary.BigEndian, uint16(pk.Length)); err != nil {
 			return err
 		}
-	} else if sizeOfLength == 4 {
+	} else if bitsOfLength == 32 {
 		if err := binary.Write(p.Writer, binary.BigEndian, uint32(pk.Length)); err != nil {
 			return err
 		}
-	} else if sizeOfLength == 8 {
+	} else if bitsOfLength == 64 {
 		if err := binary.Write(p.Writer, binary.BigEndian, uint64(pk.Length)); err != nil {
 			return err
 		}

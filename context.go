@@ -160,6 +160,7 @@ func (ctx *Context) OnClose(handler func(*Context)) {
 
 func (ctx *Context) Close() {
 	ctx.debug("closing")
+	ctx.Protocol.Close()
 	if ctx.closeHandler != nil {
 		ctx.closeHandler(ctx)
 	}
